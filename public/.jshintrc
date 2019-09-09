@@ -80,5 +80,6 @@
 	},
 
 	"jquery": true,
+    "esversion": 8,
     "browser": true
 }

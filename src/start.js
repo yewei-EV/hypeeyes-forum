@@ -12,6 +12,8 @@ start.start = function () {
 
 	setupConfigs();
 
+	linkHypeeyes();
+
 	printStartupInfo();
 
 	addProcessHandlers();
@@ -161,4 +163,21 @@ function shutdown(code) {
 		winston.info('[app] Shutdown complete.');
 		process.exit(code || 0);
 	});
+}
+
+function linkHypeeyes() {
+	const curPath = __dirname;
+	const childProcess = require('child_process');
+	const file = require('./file');
+	const path = require('path');
+	const plugins = ['nodebb-theme-hypeeyes', 'nodebb-plugin-hypeeyes'];
+	const link = 'ln -s ';
+	for (const plugin of plugins) {
+		const pluginPath = path.join(curPath, '../../', plugin);
+		const pluginNodePath = path.join(curPath, '../node_modules', plugin);
+		if (!file.existsSync(pluginNodePath) && file.existsSync(pluginPath)) {
+			const cmd = link + pluginPath + ' ' + pluginNodePath;
+			childProcess.exec(cmd);
+		}
+	}
 }
