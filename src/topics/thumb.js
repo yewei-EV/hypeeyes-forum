@@ -9,7 +9,7 @@ var mime = require('mime');
 var validator = require('validator');
 var util = require('util');
 
-var meta = require('../meta');
+// var meta = require('../meta');
 var image = require('../image');
 var file = require('../file');
 var plugins = require('../plugins');
@@ -48,8 +48,8 @@ module.exports = function (Topics) {
 
 			await image.resizeImage({
 				path: pathToUpload,
-				width: meta.config.topicThumbSize,
-				height: meta.config.topicThumbSize,
+				width: 269, // meta.config.topicThumbSize,
+				height: 230, // meta.config.topicThumbSize,
 			});
 
 			if (!plugins.hasListeners('filter:uploadImage')) {

@@ -153,8 +153,8 @@ uploadsController.uploadThumb = function (req, res, next) {
 			function (next) {
 				image.resizeImage({
 					path: uploadedFile.path,
-					width: meta.config.topicThumbSize,
-					height: meta.config.topicThumbSize,
+					width: 269, // meta.config.topicThumbSize,
+					height: 230, // meta.config.topicThumbSize,
 				}, next);
 			},
 			function (next) {
