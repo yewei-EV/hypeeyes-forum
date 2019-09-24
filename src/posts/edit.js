@@ -68,7 +68,7 @@ module.exports = function (Posts) {
 
 	async function editMainPost(data, postData) {
 		const tid = postData.tid;
-		const title = data.title ? data.title.trim() : '';
+		let title = data.title ? data.title.trim() : '';
 
 		const [topicData, isMain] = await Promise.all([
 			topics.getTopicFields(tid, ['cid', 'title', 'timestamp']),
@@ -111,6 +111,7 @@ module.exports = function (Posts) {
 
 		newTopicData.tags = data.tags;
 		newTopicData.oldTitle = topicData.title;
+		title = results.topic.title;
 		newTopicData.timestamp = topicData.timestamp;
 		const renamed = translator.escape(validator.escape(String(title))) !== topicData.title;
 		plugins.fireHook('action:topic.edit', { topic: newTopicData, uid: data.uid });
