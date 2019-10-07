@@ -36,13 +36,6 @@ search.search = async function (data) {
 async function searchInContent(data) {
 	data.uid = data.uid || 0;
 
-	const itemsPerPage = Math.min(data.itemsPerPage || 10, 100);
-	const returnData = {
-		posts: [],
-		matchCount: 0,
-		pageCount: 1,
-	};
-
 	const [searchCids, searchUids] = await Promise.all([
 		getSearchCids(data),
 		getSearchUids(data),
@@ -69,9 +62,6 @@ async function searchInContent(data) {
 	if (data.returnIds) {
 		return { pids: pids, tids: tids };
 	}
-	if (!pids.length && !tids.length) {
-		return returnData;
-	}
 
 	const mainPids = await topics.getMainPids(tids);
 
@@ -84,8 +74,12 @@ async function searchInContent(data) {
 		pids: allPids,
 	});
 
-	returnData.matchCount = metadata.pids.length;
-	returnData.pageCount = Math.max(1, Math.ceil(parseInt(returnData.matchCount, 10) / itemsPerPage));
+	const itemsPerPage = Math.min(data.itemsPerPage || 10, 100);
+	const returnData = {
+		posts: [],
+		matchCount: metadata.pids.length,
+		pageCount: Math.max(1, Math.ceil(parseInt(metadata.pids.length, 10) / itemsPerPage)),
+	};
 
 	if (data.page) {
 		const start = Math.max(0, (data.page - 1)) * itemsPerPage;
@@ -93,12 +87,13 @@ async function searchInContent(data) {
 	}
 
 	returnData.posts = await posts.getPostSummaryByPids(metadata.pids, data.uid, {});
+	await plugins.fireHook('filter:search.contentGetResult', { result: returnData, data: data });
 	delete metadata.pids;
 	return Object.assign(returnData, metadata);
 }
 
 async function filterAndSort(pids, data) {
-	if (data.sortBy === 'relevance' && !data.replies && !data.timeRange && !data.hasTags) {
+	if (data.sortBy === 'relevance' && !data.replies && !data.timeRange && !data.hasTags && !plugins.hasListeners('filter:search.filterAndSort')) {
 		return pids;
 	}
 	let postsData = await getMatchedPosts(pids, data);
@@ -114,7 +109,6 @@ async function filterAndSort(pids, data) {
 	sortPosts(postsData, data);
 
 	const result = await plugins.fireHook('filter:search.filterAndSort', { pids: pids, posts: postsData, data: data });
-
 	return result.posts.map(post => post && post.pid);
 }
 
@@ -241,18 +235,18 @@ function sortPosts(posts, data) {
 	}
 
 	data.sortDirection = data.sortDirection || 'desc';
-	var direction = data.sortDirection === 'desc' ? 1 : -1;
+	const direction = data.sortDirection === 'desc' ? 1 : -1;
 	const fields = data.sortBy.split('.');
 	if (fields.length === 1) {
 		return posts.sort((p1, p2) => direction * (p2[fields[0]] - p1[fields[0]]));
 	}
 
-	var firstPost = posts[0];
+	const firstPost = posts[0];
 	if (!fields || fields.length !== 2 || !firstPost[fields[0]] || !firstPost[fields[0]][fields[1]]) {
 		return;
 	}
 
-	var isNumeric = utils.isNumber(firstPost[fields[0]][fields[1]]);
+	const isNumeric = utils.isNumber(firstPost[fields[0]][fields[1]]);
 
 	if (isNumeric) {
 		posts.sort((p1, p2) => direction * (p2[fields[0]][fields[1]] - p1[fields[0]][fields[1]]));

@@ -1,12 +1,11 @@
 'use strict';
 
-var zxcvbn = require('zxcvbn');
-var db = require('../database');
-var utils = require('../utils');
-var plugins = require('../plugins');
-var groups = require('../groups');
-var meta = require('../meta');
-
+const zxcvbn = require('zxcvbn');
+const db = require('../database');
+const utils = require('../utils');
+const plugins = require('../plugins');
+const groups = require('../groups');
+const meta = require('../meta');
 
 module.exports = function (User) {
 	User.create = async function (data) {
@@ -119,7 +118,7 @@ module.exports = function (User) {
 		}
 
 		if (userData.password) {
-			await User.isPasswordValid(userData.password);
+			User.isPasswordValid(userData.password);
 		}
 
 		if (userData.email) {
@@ -130,9 +129,7 @@ module.exports = function (User) {
 		}
 	};
 
-	// this function doesnt need to be async, but there is exising code that uses it
-	// with a callback so it is marked async otherwise it breaks the callback code
-	User.isPasswordValid = async function (password, minStrength) {
+	User.isPasswordValid = function (password, minStrength) {
 		minStrength = minStrength || meta.config.minimumPasswordStrength;
 
 		// Sanity checks: Checks if defined and is string
@@ -148,7 +145,7 @@ module.exports = function (User) {
 			throw new Error('[[error:password-too-long]]');
 		}
 
-		var strength = zxcvbn(password);
+		const strength = zxcvbn(password);
 		if (strength.score < minStrength) {
 			throw new Error('[[user:weak_password]]');
 		}

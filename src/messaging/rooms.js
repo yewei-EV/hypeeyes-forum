@@ -114,12 +114,8 @@ module.exports = function (Messaging) {
 
 	Messaging.leaveRoom = async (uids, roomId) => {
 		const keys = uids
-			.map(function (uid) {
-				return 'uid:' + uid + ':chat:rooms';
-			})
-			.concat(uids.map(function (uid) {
-				return 'uid:' + uid + ':chat:rooms:unread';
-			}));
+			.map(uid => 'uid:' + uid + ':chat:rooms')
+			.concat(uids.map(uid => 'uid:' + uid + ':chat:rooms:unread'));
 
 		await Promise.all([
 			db.sortedSetRemove('chat:room:' + roomId + ':uids', uids),
@@ -187,7 +183,7 @@ module.exports = function (Messaging) {
 		}
 
 		await db.setObjectField('chat:room:' + payload.roomId, 'roomName', payload.newName);
-		await Messaging.addSystemMessage('room-rename, ' + payload.newName.replace(',', '%2C'), payload.uid, payload.roomId);
+		await Messaging.addSystemMessage('room-rename, ' + payload.newName.replace(',', '&#44;'), payload.uid, payload.roomId);
 
 		plugins.fireHook('action:chat.renameRoom', {
 			roomId: payload.roomId,

@@ -10,6 +10,7 @@ module.exports = function (Plugins) {
 		'filter:user.account': 'filter:account/profile.build',
 		'filter:user.account.edit': 'filter:account/edit.build',
 		'filter:notifications.get': 'filter:notifications.build',
+		'filter:file.isFileTypeAllowed': 'filter:image.isFileTypeAllowed',
 	};
 
 	Plugins.internals = {
@@ -54,7 +55,7 @@ module.exports = function (Plugins) {
 		if (Array.isArray(data.method) && data.method.every(method => typeof method === 'function' || typeof method === 'string')) {
 			// Go go gadget recursion!
 			data.method.forEach(function (method) {
-				const singularData = Object.assign({}, data, { method: method });
+				const singularData = { ...data, method: method };
 				Plugins.registerHook(id, singularData);
 			});
 		} else if (typeof data.method === 'string' && data.method.length > 0) {

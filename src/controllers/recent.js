@@ -48,13 +48,14 @@ recentController.getData = async function (req, url, sort) {
 	const stop = start + settings.topicsPerPage - 1;
 
 	const data = await topics.getSortedTopics({
-		cids: cid,
+		cids: cid || categoryData.categories.map(c => c.cid),
 		uid: req.uid,
 		start: start,
 		stop: stop,
 		filter: filter,
 		term: term,
 		sort: sort,
+		floatPinned: req.query.pinned,
 		query: req.query,
 	});
 
@@ -91,3 +92,5 @@ async function canPostTopic(uid) {
 	cids = await privileges.categories.filterCids('topics:create', cids, uid);
 	return cids.length > 0;
 }
+
+require('../promisify')(recentController, ['get']);

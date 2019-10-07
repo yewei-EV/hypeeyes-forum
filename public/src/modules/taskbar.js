@@ -155,9 +155,8 @@ define('taskbar', ['benchpress', 'translator'], function (Benchpress, translator
 
 			var	taskbarEl = $('<li />')
 				.addClass(data.options.className)
-				.html('<a href="#">' +
+				.html('<a href="#"' + (data.options.image ? ' style="background-image: url(\'' + data.options.image + '\');"' : '') + '>' +
 					(data.options.icon ? '<i class="fa ' + data.options.icon + '"></i> ' : '') +
-					(data.options.image ? '<img src="' + data.options.image + '"/> ' : '') +
 					'<span component="taskbar/title">' + title + '</span>' +
 					'</a>')
 				.attr({
@@ -212,6 +211,7 @@ define('taskbar', ['benchpress', 'translator'], function (Benchpress, translator
 	};
 
 	taskbar.updateTitle = function (module, uuid, newTitle) {
+		console.warn('[taskbar] .updateTitle() is deprecated, use .update() instead');
 		taskbar.tasklist.find('[data-module="' + module + '"][data-uuid="' + uuid + '"] [component="taskbar/title"]').text(newTitle);
 	};
 

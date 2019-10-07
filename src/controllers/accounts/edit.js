@@ -25,6 +25,7 @@ editController.get = async function (req, res, next) {
 	userData.allowProfilePicture = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:profile-picture'];
 	userData.allowCoverPicture = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:cover-picture'];
 	userData.allowProfileImageUploads = meta.config.allowProfileImageUploads;
+	userData.allowedProfileImageExtensios = user.getAllowedProfileImageExtensions().map(ext => '.' + ext).join(', ');
 	userData.allowMultipleBadges = meta.config.allowMultipleBadges === 1;
 	userData.allowAccountDelete = meta.config.allowAccountDelete === 1;
 	userData.allowWebsite = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:website'];
@@ -38,9 +39,21 @@ editController.get = async function (req, res, next) {
 	if (!userData.allowMultipleBadges) {
 		userData.groupTitle = userData.groupTitleArray[0];
 	}
+
+	userData.groups.sort((a, b) => {
+		const i1 = userData.groupTitleArray.indexOf(a.name);
+		const i2 = userData.groupTitleArray.indexOf(b.name);
+		if (i1 === -1) {
+			return 1;
+		} else if (i2 === -1) {
+			return -1;
+		}
+		return i1 - i2;
+	});
 	userData.groups.forEach(function (group) {
 		group.selected = userData.groupTitleArray.includes(group.name);
 	});
+	userData.groupSelectSize = Math.min(10, Math.max(5, userData.groups.length + 1));
 
 	userData.title = '[[pages:account/edit, ' + userData.username + ']]';
 	userData.breadcrumbs = helpers.buildBreadcrumbs([

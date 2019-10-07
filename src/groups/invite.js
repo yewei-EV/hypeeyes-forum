@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 const db = require('../database');
 const user = require('../user');
 const utils = require('../utils');
@@ -28,6 +30,14 @@ module.exports = function (Groups) {
 	Groups.acceptMembership = async function (groupName, uid) {
 		await db.setsRemove(['group:' + groupName + ':pending', 'group:' + groupName + ':invited'], uid);
 		await Groups.join(groupName, uid);
+
+		const notification = await notifications.create({
+			type: 'group-invite',
+			bodyShort: '[[groups:membership.accept.notification_title, ' + groupName + ']]',
+			nid: 'group:' + groupName + ':uid:' + uid + ':invite-accepted',
+			path: '/groups/' + utils.slugify(groupName),
+		});
+		await notifications.push(notification, [uid]);
 	};
 
 	Groups.rejectMembership = async function (groupNames, uid) {
@@ -35,66 +45,66 @@ module.exports = function (Groups) {
 			groupNames = [groupNames];
 		}
 		const sets = [];
-		groupNames.forEach(function (groupName) {
-			sets.push('group:' + groupName + ':pending', 'group:' + groupName + ':invited');
-		});
+		groupNames.forEach(groupName =>	sets.push('group:' + groupName + ':pending', 'group:' + groupName + ':invited'));
 		await db.setsRemove(sets, uid);
 	};
 
-	Groups.invite = async function (groupName, uid) {
-		await inviteOrRequestMembership(groupName, uid, 'invite');
-		const notification = await notifications.create({
+	Groups.invite = async function (groupName, uids) {
+		uids = Array.isArray(uids) ? uids : [uids];
+		await inviteOrRequestMembership(groupName, uids, 'invite');
+
+		const notificationData = await Promise.all(uids.map(uid => notifications.create({
 			type: 'group-invite',
 			bodyShort: '[[groups:invited.notification_title, ' + groupName + ']]',
 			bodyLong: '',
 			nid: 'group:' + groupName + ':uid:' + uid + ':invite',
 			path: '/groups/' + utils.slugify(groupName),
-		});
-		await notifications.push(notification, [uid]);
+		})));
+
+		await Promise.all(uids.map((uid, index) => notifications.push(notificationData[index], uid)));
 	};
 
-	async function inviteOrRequestMembership(groupName, uid, type) {
-		if (!(parseInt(uid, 10) > 0)) {
-			throw new Error('[[error:not-logged-in]]');
-		}
-
+	async function inviteOrRequestMembership(groupName, uids, type) {
+		uids = Array.isArray(uids) ? uids : [uids];
+		uids = uids.filter(uid => parseInt(uid, 10) > 0);
 		const [exists, isMember, isPending, isInvited] = await Promise.all([
 			Groups.exists(groupName),
-			Groups.isMember(uid, groupName),
-			Groups.isPending(uid, groupName),
-			Groups.isInvited(uid, groupName),
+			Groups.isMembers(uids, groupName),
+			Groups.isPending(uids, groupName),
+			Groups.isInvited(uids, groupName),
 		]);
 
 		if (!exists) {
 			throw new Error('[[error:no-group]]');
-		} else if (isMember || (type === 'invite' && isInvited)) {
-			return;
-		} else if (type === 'request' && isPending) {
-			throw new Error('[[error:group-already-requested]]');
 		}
 
+		uids = uids.filter((uid, i) => !isMember[i] && ((type === 'invite' && !isInvited[i]) || (type === 'request' && !isPending[i])));
+
 		const set = type === 'invite' ? 'group:' + groupName + ':invited' : 'group:' + groupName + ':pending';
-		await db.setAdd(set, uid);
+		await db.setAdd(set, uids);
 		const hookName = type === 'invite' ? 'action:group.inviteMember' : 'action:group.requestMembership';
 		plugins.fireHook(hookName, {
 			groupName: groupName,
-			uid: uid,
+			uids: uids,
 		});
 	}
 
-	Groups.isInvited = async function (uid, groupName) {
-		if (!(parseInt(uid, 10) > 0)) {
-			return false;
-		}
-		return await db.isSetMember('group:' + groupName + ':invited', uid);
+	Groups.isInvited = async function (uids, groupName) {
+		return await checkInvitePending(uids, 'group:' + groupName + ':invited');
 	};
 
-	Groups.isPending = async function (uid, groupName) {
-		if (!(parseInt(uid, 10) > 0)) {
-			return false;
-		}
-		return await db.isSetMember('group:' + groupName + ':pending', uid);
+	Groups.isPending = async function (uids, groupName) {
+		return await checkInvitePending(uids, 'group:' + groupName + ':pending');
 	};
+
+	async function checkInvitePending(uids, set) {
+		const isArray = Array.isArray(uids);
+		uids = isArray ? uids : [uids];
+		const checkUids = uids.filter(uid => parseInt(uid, 10) > 0);
+		const isMembers = await db.isSetMembers(set, checkUids);
+		const map = _.zipObject(checkUids, isMembers);
+		return isArray ? uids.map(uid => !!map[uid]) : !!map[uids[0]];
+	}
 
 	Groups.getPending = async function (groupName) {
 		if (!groupName) {

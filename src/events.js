@@ -14,6 +14,8 @@ const events = module.exports;
 events.types = [
 	'plugin-activate',
 	'plugin-deactivate',
+	'plugin-install',
+	'plugin-uninstall',
 	'restart',
 	'build',
 	'config-change',
@@ -40,8 +42,18 @@ events.types = [
 	'ip-blacklist-addRule',
 	'registration-approved',
 	'registration-rejected',
-	'accept-membership',
-	'reject-membership',
+	'group-join',
+	'group-request-membership',
+	'group-add-member',
+	'group-leave',
+	'group-owner-grant',
+	'group-owner-rescind',
+	'group-accept-membership',
+	'group-reject-membership',
+	'group-invite',
+	'group-invite-accept',
+	'group-invite-reject',
+	'group-kick',
 	'theme-set',
 	'export:uploads',
 	'account-locked',
@@ -87,7 +99,7 @@ events.getEvents = async function (filter, start, stop, from, to) {
 				event[key] = validator.escape(String(event[key] || ''));
 			}
 		});
-		var e = utils.merge(event);
+		const e = utils.merge(event);
 		e.eid = undefined;
 		e.uid = undefined;
 		e.type = undefined;

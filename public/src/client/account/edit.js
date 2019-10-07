@@ -23,6 +23,7 @@ define('forum/account/edit', ['forum/account/header', 'translator', 'components'
 		handleEmailConfirm();
 		updateSignature();
 		updateAboutMe();
+		handleGroupSort();
 	};
 
 	function updateProfile() {
@@ -227,6 +228,7 @@ define('forum/account/edit', ['forum/account/header', 'translator', 'components'
 
 			pictureCropper.show({
 				socketMethod: 'user.uploadCroppedPicture',
+				route: config.relative_path + '/api/user/' + ajaxify.data.userslug + '/uploadpicture',
 				aspectRatio: 1 / 1,
 				paramName: 'uid',
 				paramValue: ajaxify.data.theirid,
@@ -234,7 +236,7 @@ define('forum/account/edit', ['forum/account/header', 'translator', 'components'
 				allowSkippingCrop: false,
 				title: '[[user:upload_picture]]',
 				description: '[[user:upload_a_picture]]',
-				accept: '.png,.jpg,.bmp',
+				accept: ajaxify.data.allowedProfileImageExtensios,
 			}, function (url) {
 				onUploadComplete(url);
 			});
@@ -329,6 +331,28 @@ define('forum/account/edit', ['forum/account/header', 'translator', 'components'
 		});
 	}
 
+	function handleGroupSort() {
+		function move(direction) {
+			var selected = $('#groupTitle').val();
+			if (!ajaxify.data.allowMultipleBadges || (Array.isArray(selected) && selected.length > 1)) {
+				return;
+			}
+			var el = $('#groupTitle').find(':selected');
+			if (el.length && el.val()) {
+				if (direction > 0) {
+					el.insertAfter(el.next());
+				} else if (el.prev().val()) {
+					el.insertBefore(el.prev());
+				}
+			}
+		}
+		$('[component="group/order/up"]').on('click', function () {
+			move(-1);
+		});
+		$('[component="group/order/down"]').on('click', function () {
+			move(1);
+		});
+	}
 
 	return AccountEdit;
 });
