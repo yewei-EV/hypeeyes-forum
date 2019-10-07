@@ -182,6 +182,35 @@ define('taskbar', ['benchpress', 'translator'], function (Benchpress, translator
 		});
 	}
 
+	var processUpdate = function (element, key, value) {
+		switch (key) {
+		case 'title':
+			element.find('[component="taskbar/title"]').text(value);
+			break;
+		case 'icon':
+			element.find('i').attr('class', 'fa fa-' + value);
+			break;
+		case 'image':
+			element.find('a').css('background-image', 'url("' + value + '")');
+			break;
+		case 'background-color':
+			element.find('a').css('background-color', value);
+			break;
+		}
+	};
+
+	taskbar.update = function (module, uuid, options) {
+		var element = taskbar.tasklist.find('[data-module="' + module + '"][data-uuid="' + uuid + '"]');
+		var data = element.data();
+
+		Object.keys(options).forEach(function (key) {
+			data[key] = options[key];
+			processUpdate(element, key, options[key]);
+		});
+
+		element.data(data);
+	};
+
 	taskbar.updateTitle = function (module, uuid, newTitle) {
 		taskbar.tasklist.find('[data-module="' + module + '"][data-uuid="' + uuid + '"] [component="taskbar/title"]').text(newTitle);
 	};
