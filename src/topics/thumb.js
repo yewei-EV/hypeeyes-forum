@@ -48,8 +48,8 @@ module.exports = function (Topics) {
 
 			await image.resizeImage({
 				path: pathToUpload,
-				width: meta.config.topicThumbSize,
-				height: meta.config.topicThumbSize,
+				width: 269,
+				height: 230,
 			});
 
 			if (!plugins.hasListeners('filter:uploadImage')) {
