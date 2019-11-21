@@ -31,7 +31,13 @@ middleware.regexes = {
 	timestampedUpload: /^\d+-.+$/,
 };
 
-middleware.applyCSRF = csrf();
+middleware.applyCSRF = csrf({
+	cookie: nconf.get('url_parsed').protocol === 'https:' ? {
+		secure: true,
+		sameSite: 'Strict',
+		httpOnly: true,
+	} : true,
+});
 
 middleware.ensureLoggedIn = ensureLoggedIn.ensureLoggedIn(nconf.get('relative_path') + '/login');
 

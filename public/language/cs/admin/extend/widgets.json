@@ -18,5 +18,13 @@
 	"alert.update-success": "Miniaplikace byly úspěšně aktualizovány",
 	"alert.clone-success": "Úspěšně naklonované miniaplikace",
 
-	"error.select-clone": "Vyberte prosím stránku, ze které chcete klonovat"
+	"error.select-clone": "Vyberte prosím stránku, ze které chcete klonovat",
+
+	"title": "Titul",
+	"title.placeholder": "Titul (zobrazuje se jen v některých kontajnerech)",
+	"container": "Kontejner",
+	"container.placeholder": "Přesuňte sem kontejner nebo zadejte HTML",
+	"show-to-groups": "Zobrazit ve skupinách",
+	"hide-from-groups": "Skrýt ve skupinách",
+	"hide-on-mobile": "Skrýt na mobilu"
 }

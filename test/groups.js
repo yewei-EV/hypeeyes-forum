@@ -1161,7 +1161,8 @@ describe('Groups', function () {
 				assert.equal(groupData.name, 'newgroup');
 				assert.equal(groupData.description, 'group created by admin');
 				assert.equal(groupData.ownerUid, adminUid);
-				assert.equal(groupData.private, true);
+				assert.equal(groupData.private, 1);
+				assert.equal(groupData.hidden, 0);
 				assert.equal(groupData.memberCount, 1);
 				done();
 			});
@@ -1296,7 +1297,10 @@ describe('Groups', function () {
 		it('should upload group cover image from file', function (done) {
 			var data = {
 				groupName: 'Test',
-				file: imagePath,
+				file: {
+					path: imagePath,
+					type: 'image/png',
+				},
 			};
 			socketGroups.cover.update({ uid: adminUid }, data, function (err, data) {
 				assert.ifError(err);
@@ -1325,6 +1329,17 @@ describe('Groups', function () {
 					assert.equal(nconf.get('relative_path') + data.url, groupData['cover:url']);
 					done();
 				});
+			});
+		});
+
+		it('should fail to upload group cover with invalid image', function (done) {
+			var data = {
+				groupName: 'Test',
+				imageData: 'data:image/svg;base64,iVBORw0KGgoAAAANSUhEUgAAABwA',
+			};
+			socketGroups.cover.update({ uid: adminUid }, data, function (err, data) {
+				assert.equal(err.message, '[[error:invalid-image]]');
+				done();
 			});
 		});
 

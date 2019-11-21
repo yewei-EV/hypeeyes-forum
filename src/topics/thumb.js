@@ -9,7 +9,6 @@ var mime = require('mime');
 var validator = require('validator');
 var util = require('util');
 
-var meta = require('../meta');
 var image = require('../image');
 var file = require('../file');
 var plugins = require('../plugins');
@@ -44,7 +43,7 @@ module.exports = function (Topics) {
 
 			await pipeToFileAsync(data.thumb, pathToUpload);
 
-			await file.isFileTypeAllowed(pathToUpload);
+			await image.isFileTypeAllowed(pathToUpload);
 
 			await image.resizeImage({
 				path: pathToUpload,

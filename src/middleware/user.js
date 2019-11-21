@@ -132,7 +132,7 @@ module.exports = function (middleware) {
 
 				// For the account/info page only, allow plain moderators through
 				if (/user\/.+\/info$/.test(req.path)) {
-					user.isModeratorOfAnyCategory(req.uid, next);
+					privileges.global.can('view:users:info', req.uid, next);
 				} else {
 					next(null, false);
 				}
@@ -198,49 +198,41 @@ module.exports = function (middleware) {
 		], next);
 	};
 
-	middleware.isAdmin = function isAdmin(req, res, next) {
-		async.waterfall([
-			function (next) {
-				user.isAdministrator(req.uid, next);
-			},
-			function (isAdmin, next) {
-				if (!isAdmin) {
-					return controllers.helpers.notAllowed(req, res);
-				}
-				user.hasPassword(req.uid, next);
-			},
-			function (hasPassword, next) {
-				if (!hasPassword) {
-					return next();
-				}
+	middleware.isAdmin = async function isAdmin(req, res, next) {
+		const isAdmin = await user.isAdministrator(req.uid);
+		if (!isAdmin) {
+			return controllers.helpers.notAllowed(req, res);
+		}
+		const hasPassword = await user.hasPassword(req.uid);
+		if (!hasPassword) {
+			return next();
+		}
 
-				var loginTime = req.session.meta ? req.session.meta.datetime : 0;
-				var adminReloginDuration = meta.config.adminReloginDuration * 60000;
-				var disabled = meta.config.adminReloginDuration === 0;
-				if (disabled || (loginTime && parseInt(loginTime, 10) > Date.now() - adminReloginDuration)) {
-					var timeLeft = parseInt(loginTime, 10) - (Date.now() - adminReloginDuration);
-					if (req.session.meta && timeLeft < Math.min(300000, adminReloginDuration)) {
-						req.session.meta.datetime += Math.min(300000, adminReloginDuration);
-					}
+		const loginTime = req.session.meta ? req.session.meta.datetime : 0;
+		const adminReloginDuration = meta.config.adminReloginDuration * 60000;
+		const disabled = meta.config.adminReloginDuration === 0;
+		if (disabled || (loginTime && parseInt(loginTime, 10) > Date.now() - adminReloginDuration)) {
+			const timeLeft = parseInt(loginTime, 10) - (Date.now() - adminReloginDuration);
+			if (req.session.meta && timeLeft < Math.min(300000, adminReloginDuration)) {
+				req.session.meta.datetime += Math.min(300000, adminReloginDuration);
+			}
 
-					return next();
-				}
+			return next();
+		}
 
-				var returnTo = req.path;
-				if (nconf.get('relative_path')) {
-					returnTo = req.path.replace(new RegExp('^' + nconf.get('relative_path')), '');
-				}
-				returnTo = returnTo.replace(/^\/api/, '');
+		let returnTo = req.path;
+		if (nconf.get('relative_path')) {
+			returnTo = req.path.replace(new RegExp('^' + nconf.get('relative_path')), '');
+		}
+		returnTo = returnTo.replace(/^\/api/, '');
 
-				req.session.returnTo = returnTo;
-				req.session.forceLogin = 1;
-				if (res.locals.isAPI) {
-					res.status(401).json({});
-				} else {
-					res.redirect(nconf.get('relative_path') + '/login');
-				}
-			},
-		], next);
+		req.session.returnTo = returnTo;
+		req.session.forceLogin = 1;
+		if (res.locals.isAPI) {
+			res.status(401).json({});
+		} else {
+			res.redirect(nconf.get('relative_path') + '/login?local=1');
+		}
 	};
 
 	middleware.requireUser = function (req, res, next) {

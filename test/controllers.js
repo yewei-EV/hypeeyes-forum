@@ -1300,7 +1300,7 @@ describe('Controllers', function () {
 					assert.equal(notif.bodyShort, notifData.bodyShort);
 					assert.equal(notif.bodyLong, notifData.bodyLong);
 					assert.equal(notif.pid, notifData.pid);
-					assert.equal(notif.path, notifData.path);
+					assert.equal(notif.path, nconf.get('relative_path') + notifData.path);
 					assert.equal(notif.nid, notifData.nid);
 					next();
 				},
@@ -1398,17 +1398,48 @@ describe('Controllers', function () {
 			});
 		});
 
-		it('should increase profile view', function (done) {
+		it('should not increase profile view if you visit your own profile', (done) => {
+			request(nconf.get('url') + '/api/user/foo', { jar: jar }, function (err, res) {
+				assert.ifError(err);
+				assert.equal(res.statusCode, 200);
+				setTimeout(function () {
+					user.getUserField(fooUid, 'profileviews', function (err, viewcount) {
+						assert.ifError(err);
+						assert(viewcount === 0);
+						done();
+					});
+				}, 500);
+			});
+		});
+
+		it('should not increase profile view if a guest visits a profile', (done) => {
 			request(nconf.get('url') + '/api/user/foo', { }, function (err, res) {
 				assert.ifError(err);
 				assert.equal(res.statusCode, 200);
 				setTimeout(function () {
 					user.getUserField(fooUid, 'profileviews', function (err, viewcount) {
 						assert.ifError(err);
-						assert(viewcount > 0);
+						assert(viewcount === 0);
 						done();
 					});
 				}, 500);
+			});
+		});
+
+		it('should increase profile view', function (done) {
+			helpers.loginUser('regularJoe', 'barbar', function (err, jar) {
+				assert.ifError(err);
+				request(nconf.get('url') + '/api/user/foo', { jar: jar }, function (err, res) {
+					assert.ifError(err);
+					assert.equal(res.statusCode, 200);
+					setTimeout(function () {
+						user.getUserField(fooUid, 'profileviews', function (err, viewcount) {
+							assert.ifError(err);
+							assert(viewcount > 0);
+							done();
+						});
+					}, 500);
+				});
 			});
 		});
 

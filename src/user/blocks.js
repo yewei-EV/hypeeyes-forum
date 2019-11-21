@@ -1,11 +1,10 @@
 'use strict';
 
-var async = require('async');
-var LRU = require('lru-cache');
+const async = require('async');
+const LRU = require('lru-cache');
 
-
-var db = require('../database');
-var pubsub = require('../pubsub');
+const db = require('../database');
+const pubsub = require('../pubsub');
 
 module.exports = function (User) {
 	User.blocks = {
@@ -39,7 +38,7 @@ module.exports = function (User) {
 			throw new Error('[[error:cannot-block-privileged]]');
 		}
 		if (parseInt(callerUid, 10) !== parseInt(blockerUid, 10) && !isCallerAdminOrMod) {
-			throw new Error();
+			throw new Error('[[error:no-privileges]]');
 		}
 	};
 

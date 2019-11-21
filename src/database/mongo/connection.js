@@ -50,18 +50,17 @@ connection.getConnectionOptions = function (mongo) {
 		autoReconnect: true,
 		connectTimeoutMS: 90000,
 		useNewUrlParser: true,
+		useUnifiedTopology: true,
 	};
 
 	return _.merge(connOptions, mongo.options || {});
 };
 
-connection.connect = function (options, callback) {
-	callback = callback || function () { };
-
+connection.connect = async function (options) {
 	const mongoClient = require('mongodb').MongoClient;
 
 	const connString = connection.getConnectionString(options);
 	const connOptions = connection.getConnectionOptions(options);
 
-	mongoClient.connect(connString, connOptions, callback);
+	return await mongoClient.connect(connString, connOptions);
 };

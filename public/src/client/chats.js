@@ -424,8 +424,8 @@ define('forum/chats', [
 								messages.scrollToBottom($('.expanded-chat ul.chat-content'));
 								if (history.pushState) {
 									history.pushState({
-										url: 'user/' + payload.userslug + '/chats/' + payload.roomId,
-									}, null, window.location.protocol + '//' + window.location.host + config.relative_path + '/user/' + payload.userslug + '/chats/' + payload.roomId);
+										url: url,
+									}, null, window.location.protocol + '//' + window.location.host + config.relative_path + '/' + url);
 								}
 							});
 						});
@@ -498,7 +498,13 @@ define('forum/chats', [
 
 	Chats.resizeMainWindow = function () {
 		var viewportHeight = $(window).height();
-		var fromTop = components.get('chat/main-wrapper').offset().top || components.get('chat/nav-wrapper').offset().top;
+		var mainWrapper = components.get('chat/main-wrapper');
+		var navWrapper = components.get('chat/nav-wrapper');
+		var fromTop = 0;
+		if (mainWrapper.length && navWrapper.length) {
+			fromTop = mainWrapper.offset().top || navWrapper.offset().top;
+		}
+
 		$('.chats-full').height(viewportHeight - fromTop - 1);
 
 		Chats.setActive();

@@ -54,6 +54,11 @@
 				</tr>
 				<!-- END groups -->
 			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="6"><br /><br /></td>
+				</tr>
+			</tfoot>
 		</table>
 
 		<!-- IMPORT partials/paginator.tpl -->
@@ -77,6 +82,19 @@
 							<label for="create-group-desc">[[admin/manage/groups:description]]</label>
 							<input type="text" class="form-control" id="create-group-desc" placeholder="[[admin/manage/groups:description-placeholder]]" />
 						</div>
+						<div class="form-group">
+							<label>
+								<input id="create-group-private" name="private" type="checkbox" checked>
+								<strong>[[admin/manage/groups:private]]</strong>
+							</label>
+						</div>
+						<div class="form-group">
+							<label>
+								<input id="create-group-hidden" name="hidden" type="checkbox">
+								<strong>[[admin/manage/groups:hidden]]</strong>
+							</label>
+						</div>
+
 					</form>
 				</div>
 				<div class="modal-footer">

@@ -71,7 +71,7 @@ function activate(plugin) {
 				process.exit(0);
 			}
 
-			db.sortetSetCard('plugins:active', next);
+			db.sortedSetCard('plugins:active', next);
 		},
 		function (numPlugins, next) {
 			winston.info('Activating plugin `%s`', plugin);
@@ -94,7 +94,9 @@ function activate(plugin) {
 
 function listPlugins() {
 	async.waterfall([
-		db.init,
+		function (next) {
+			db.init(next);
+		},
 		function (next) {
 			db.getSortedSetRange('plugins:active', 0, -1, next);
 		},
@@ -109,7 +111,9 @@ function listPlugins() {
 
 function listEvents(count) {
 	async.waterfall([
-		db.init,
+		function (next) {
+			db.init(next);
+		},
 		async.apply(events.getEvents, '', 0, (count || 10) - 1),
 		function (eventData) {
 			console.log(('\nDisplaying last ' + count + ' administrative events...').bold);
@@ -143,7 +147,9 @@ function info() {
 			console.log('  database: ' + config.database);
 			next();
 		},
-		db.init,
+		function (next) {
+			db.init(next);
+		},
 		function (next) {
 			db.info(db.client, next);
 		},
@@ -192,7 +198,17 @@ function info() {
 	});
 }
 
-exports.build = build.build;
+function buildWrapper(targets, options) {
+	build.build(targets, options, function (err) {
+		if (err) {
+			winston.error(err);
+			process.exit(1);
+		}
+		process.exit(0);
+	});
+}
+
+exports.build = buildWrapper;
 exports.buildTargets = buildTargets;
 exports.activate = activate;
 exports.listPlugins = listPlugins;

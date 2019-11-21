@@ -1,62 +1,56 @@
 'use strict';
 
-var async = require('async');
-var winston = require('winston');
-var fs = require('fs');
-var path = require('path');
-var nconf = require('nconf');
+const async = require('async');
+const winston = require('winston');
+const fs = require('fs');
+const path = require('path');
+const nconf = require('nconf');
 
-var meta = require('../meta');
-var plugins = require('../plugins');
-var widgets = require('../widgets');
-var user = require('../user');
-var userDigest = require('../user/digest');
-var userEmail = require('../user/email');
-var logger = require('../logger');
-var events = require('../events');
-var notifications = require('../notifications');
-var emailer = require('../emailer');
-var db = require('../database');
-var analytics = require('../analytics');
-var websockets = require('../socket.io/index');
-var index = require('./index');
-var getAdminSearchDict = require('../admin/search').getDictionary;
-var utils = require('../../public/src/utils');
+const meta = require('../meta');
+const plugins = require('../plugins');
+const widgets = require('../widgets');
+const user = require('../user');
+const userDigest = require('../user/digest');
+const userEmail = require('../user/email');
+const logger = require('../logger');
+const events = require('../events');
+const notifications = require('../notifications');
+const emailer = require('../emailer');
+const db = require('../database');
+const analytics = require('../analytics');
+const websockets = require('../socket.io/index');
+const index = require('./index');
+const getAdminSearchDict = require('../admin/search').getDictionary;
+const utils = require('../../public/src/utils');
 
-var SocketAdmin = {
-	user: require('./admin/user'),
-	categories: require('./admin/categories'),
-	groups: require('./admin/groups'),
-	tags: require('./admin/tags'),
-	rewards: require('./admin/rewards'),
-	navigation: require('./admin/navigation'),
-	rooms: require('./admin/rooms'),
-	social: require('./admin/social'),
-	themes: {},
-	plugins: {},
-	widgets: {},
-	config: {},
-	settings: {},
-	email: {},
-	analytics: {},
-	logs: {},
-	errors: {},
-	uploads: {},
-};
+const SocketAdmin = module.exports;
+SocketAdmin.user = require('./admin/user');
+SocketAdmin.categories = require('./admin/categories');
+SocketAdmin.groups = require('./admin/groups');
+SocketAdmin.tags = require('./admin/tags');
+SocketAdmin.rewards = require('./admin/rewards');
+SocketAdmin.navigation = require('./admin/navigation');
+SocketAdmin.rooms = require('./admin/rooms');
+SocketAdmin.social = require('./admin/social');
+SocketAdmin.themes = {};
+SocketAdmin.plugins = {};
+SocketAdmin.widgets = {};
+SocketAdmin.config = {};
+SocketAdmin.settings = {};
+SocketAdmin.email = {};
+SocketAdmin.analytics = {};
+SocketAdmin.logs = {};
+SocketAdmin.errors = {};
+SocketAdmin.uploads = {};
+SocketAdmin.digest = {};
 
-SocketAdmin.before = function (socket, method, data, next) {
-	async.waterfall([
-		function (next) {
-			user.isAdministrator(socket.uid, next);
-		},
-		function (isAdmin) {
-			if (isAdmin) {
-				return next();
-			}
-			winston.warn('[socket.io] Call to admin method ( ' + method + ' ) blocked (accessed by uid ' + socket.uid + ')');
-			next(new Error('[[error:no-privileges]]'));
-		},
-	], next);
+SocketAdmin.before = async function (socket, method) {
+	const isAdmin = await user.isAdministrator(socket.uid);
+	if (isAdmin) {
+		return;
+	}
+	winston.warn('[socket.io] Call to admin method ( ' + method + ' ) blocked (accessed by uid ' + socket.uid + ')');
+	throw new Error('[[error:no-privileges]]');
 };
 
 SocketAdmin.restart = function (socket, data, callback) {
@@ -78,23 +72,16 @@ function logRestart(socket) {
 	});
 }
 
-SocketAdmin.reload = function (socket, data, callback) {
-	async.waterfall([
-		function (next) {
-			require('../meta/build').buildAll(next);
-		},
-		function (next) {
-			events.log({
-				type: 'build',
-				uid: socket.uid,
-				ip: socket.ip,
-			});
+SocketAdmin.reload = async function (socket) {
+	await require('../meta/build').buildAll();
+	await events.log({
+		type: 'build',
+		uid: socket.uid,
+		ip: socket.ip,
+	});
 
-			logRestart(socket);
-			meta.restart();
-			next();
-		},
-	], callback);
+	logRestart(socket);
+	meta.restart();
 };
 
 SocketAdmin.fireEvent = function (socket, data, callback) {
@@ -147,14 +134,9 @@ SocketAdmin.plugins.getActive = function (socket, data, callback) {
 	plugins.getActive(callback);
 };
 
-SocketAdmin.plugins.orderActivePlugins = function (socket, data, callback) {
-	async.each(data, function (plugin, next) {
-		if (plugin && plugin.name) {
-			db.sortedSetAdd('plugins:active', plugin.order || 0, plugin.name, next);
-		} else {
-			setImmediate(next);
-		}
-	}, callback);
+SocketAdmin.plugins.orderActivePlugins = async function (socket, data) {
+	data = data.filter(plugin => plugin && plugin.name);
+	await Promise.all(data.map(plugin => db.sortedSetAdd('plugins:active', plugin.order || 0, plugin.name)));
 };
 
 SocketAdmin.plugins.upgrade = function (socket, data, callback) {
@@ -169,56 +151,46 @@ SocketAdmin.widgets.set = function (socket, data, callback) {
 	async.eachSeries(data, widgets.setArea, callback);
 };
 
-SocketAdmin.config.set = function (socket, data, callback) {
+SocketAdmin.config.set = async function (socket, data) {
 	if (!data) {
-		return callback(new Error('[[error:invalid-data]]'));
+		throw new Error('[[error:invalid-data]]');
 	}
-	var _data = {};
+	const _data = {};
 	_data[data.key] = data.value;
-	SocketAdmin.config.setMultiple(socket, _data, callback);
+	await SocketAdmin.config.setMultiple(socket, _data);
 };
 
-SocketAdmin.config.setMultiple = function (socket, data, callback) {
+SocketAdmin.config.setMultiple = async function (socket, data) {
 	if (!data) {
-		return callback(new Error('[[error:invalid-data]]'));
+		throw new Error('[[error:invalid-data]]');
 	}
 
-	var changes = {};
-	data = meta.configs.deserialize(data);
-	Object.keys(data).forEach(function (key) {
-		if (data[key] !== meta.config[key]) {
-			changes[key] = data[key];
+	const changes = {};
+	const newData = meta.configs.serialize(data);
+	const oldData = meta.configs.serialize(meta.config);
+	Object.keys(newData).forEach(function (key) {
+		if (newData[key] !== oldData[key]) {
+			changes[key] = newData[key];
 			changes[key + '_old'] = meta.config[key];
 		}
 	});
-
-	async.waterfall([
-		function (next) {
-			meta.configs.setMultiple(data, next);
-		},
-		function (next) {
-			var setting;
-			for (var field in data) {
-				if (data.hasOwnProperty(field)) {
-					setting = {
-						key: field,
-						value: data[field],
-					};
-					plugins.fireHook('action:config.set', setting);
-					logger.monitorConfig({ io: index.server }, setting);
-				}
-			}
-
-			if (Object.keys(changes).length) {
-				changes.type = 'config-change';
-				changes.uid = socket.uid;
-				changes.ip = socket.ip;
-				events.log(changes, next);
-			} else {
-				next();
-			}
-		},
-	], callback);
+	await meta.configs.setMultiple(data);
+	for (const field in data) {
+		if (data.hasOwnProperty(field)) {
+			const setting = {
+				key: field,
+				value: data[field],
+			};
+			plugins.fireHook('action:config.set', setting);
+			logger.monitorConfig({ io: index.server }, setting);
+		}
+	}
+	if (Object.keys(changes).length) {
+		changes.type = 'config-change';
+		changes.uid = socket.uid;
+		changes.ip = socket.ip;
+		await events.log(changes);
+	}
 };
 
 SocketAdmin.config.remove = function (socket, key, callback) {
@@ -229,20 +201,14 @@ SocketAdmin.settings.get = function (socket, data, callback) {
 	meta.settings.get(data.hash, callback);
 };
 
-SocketAdmin.settings.set = function (socket, data, callback) {
-	async.waterfall([
-		function (next) {
-			meta.settings.set(data.hash, data.values, next);
-		},
-		function (next) {
-			var eventData = data.values;
-			eventData.type = 'settings-change';
-			eventData.uid = socket.uid;
-			eventData.ip = socket.ip;
-			eventData.hash = data.hash;
-			events.log(eventData, next);
-		},
-	], callback);
+SocketAdmin.settings.set = async function (socket, data) {
+	await meta.settings.set(data.hash, data.values);
+	const eventData = data.values;
+	eventData.type = 'settings-change';
+	eventData.uid = socket.uid;
+	eventData.ip = socket.ip;
+	eventData.hash = data.hash;
+	await events.log(eventData);
 };
 
 SocketAdmin.settings.clearSitemapCache = function (socket, data, callback) {
@@ -251,7 +217,7 @@ SocketAdmin.settings.clearSitemapCache = function (socket, data, callback) {
 };
 
 SocketAdmin.email.test = function (socket, data, callback) {
-	var payload = {
+	const payload = {
 		subject: '[[email:test-email.subject]]',
 	};
 
@@ -363,24 +329,10 @@ SocketAdmin.errors.clear = function (socket, data, callback) {
 	meta.errors.clear(callback);
 };
 
-SocketAdmin.deleteEvents = function (socket, eids, callback) {
-	events.deleteEvents(eids, callback);
-};
-
-SocketAdmin.deleteAllEvents = function (socket, data, callback) {
-	events.deleteAll(callback);
-};
-
-SocketAdmin.getSearchDict = function (socket, data, callback) {
-	async.waterfall([
-		function (next) {
-			user.getSettings(socket.uid, next);
-		},
-		function (settings, next) {
-			var lang = settings.userLang || meta.config.defaultLang || 'en-GB';
-			getAdminSearchDict(lang, next);
-		},
-	], callback);
+SocketAdmin.getSearchDict = async function (socket) {
+	const settings = await user.getSettings(socket.uid);
+	const lang = settings.userLang || meta.config.defaultLang || 'en-GB';
+	return await getAdminSearchDict(lang);
 };
 
 SocketAdmin.deleteAllSessions = function (socket, data, callback) {
@@ -401,6 +353,22 @@ SocketAdmin.uploads.delete = function (socket, pathToFile, callback) {
 	fs.unlink(pathToFile, callback);
 };
 
-module.exports = SocketAdmin;
+SocketAdmin.digest.resend = async (socket, data) => {
+	const uid = data.uid;
+	const interval = data.action.startsWith('resend-') ? data.action.slice(7) : await userDigest.getUsersInterval(uid);
+
+	if (!interval && meta.config.dailyDigestFreq === 'off') {
+		throw new Error('[[error:digest-not-enabled]]');
+	}
+
+	if (uid) {
+		await userDigest.execute({
+			interval: interval || meta.config.dailyDigestFreq,
+			subscribers: [uid],
+		});
+	} else {
+		await userDigest.execute({ interval: interval });
+	}
+};
 
 require('../promisify')(SocketAdmin);

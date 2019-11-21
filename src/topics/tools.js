@@ -22,56 +22,57 @@ module.exports = function (Topics) {
 	};
 
 	async function toggleDelete(tid, uid, isDelete) {
-		const exists = await Topics.exists(tid);
-		if (!exists) {
+		const topicData = await Topics.getTopicData(tid);
+		if (!topicData) {
 			throw new Error('[[error:no-topic]]');
 		}
 		const canDelete = await privileges.topics.canDelete(tid, uid);
-		if (!canDelete) {
+
+		const data = await plugins.fireHook(isDelete ? 'filter:topic.delete' : 'filter:topic.restore', { topicData: topicData, uid: uid, isDelete: isDelete, canDelete: canDelete, canRestore: canDelete });
+
+		if ((!data.canDelete && data.isDelete) || (!data.canRestore && !data.isDelete)) {
 			throw new Error('[[error:no-privileges]]');
 		}
-		const topicData = await Topics.getTopicFields(tid, ['tid', 'cid', 'uid', 'deleted', 'title', 'mainPid']);
-		if (topicData.deleted && isDelete) {
+		if (data.topicData.deleted && data.isDelete) {
 			throw new Error('[[error:topic-already-deleted]]');
-		} else if (!topicData.deleted && !isDelete) {
+		} else if (!data.topicData.deleted && !data.isDelete) {
 			throw new Error('[[error:topic-already-restored]]');
 		}
-
-		if (isDelete) {
-			await Topics.delete(tid, uid);
+		if (data.isDelete) {
+			await Topics.delete(data.topicData.tid, data.uid);
 		} else {
-			await Topics.restore(tid);
+			await Topics.restore(data.topicData.tid);
 		}
 
-		topicData.deleted = isDelete ? 1 : 0;
+		data.topicData.deleted = data.isDelete ? 1 : 0;
 
-		if (isDelete) {
-			plugins.fireHook('action:topic.delete', { topic: topicData, uid: uid });
+		if (data.isDelete) {
+			plugins.fireHook('action:topic.delete', { topic: data.topicData, uid: data.uid });
 		} else {
-			plugins.fireHook('action:topic.restore', { topic: topicData, uid: uid });
+			plugins.fireHook('action:topic.restore', { topic: data.topicData, uid: data.uid });
 		}
-		const userData = await user.getUserFields(uid, ['username', 'userslug']);
+		const userData = await user.getUserFields(data.uid, ['username', 'userslug']);
 		return {
-			tid: tid,
-			cid: topicData.cid,
-			isDelete: isDelete,
-			uid: uid,
+			tid: data.topicData.tid,
+			cid: data.topicData.cid,
+			isDelete: data.isDelete,
+			uid: data.uid,
 			user: userData,
 		};
 	}
 
 	topicTools.purge = async function (tid, uid) {
-		const exists = await Topics.exists(tid);
-		if (!exists) {
+		const topicData = await Topics.getTopicData(tid);
+		if (!topicData) {
 			return;
 		}
 		const canPurge = await privileges.topics.canPurge(tid, uid);
 		if (!canPurge) {
 			throw new Error('[[error:no-privileges]]');
 		}
-		const cid = await Topics.getTopicField(tid, 'cid');
+
 		await Topics.purgePostsAndTopic(tid, uid);
-		return { tid: tid, cid: cid, uid: uid };
+		return { tid: tid, cid: topicData.cid, uid: uid };
 	};
 
 	topicTools.lock = async function (tid, uid) {
@@ -148,7 +149,7 @@ module.exports = function (Topics) {
 		const tids = data.map(topic => topic && topic.tid);
 		const topicData = await Topics.getTopicsFields(tids, ['cid']);
 
-		var uniqueCids = _.uniq(topicData.map(topicData => topicData && topicData.cid));
+		const uniqueCids = _.uniq(topicData.map(topicData => topicData && topicData.cid));
 		if (uniqueCids.length > 1 || !uniqueCids.length || !uniqueCids[0]) {
 			throw new Error('[[error:invalid-data]]');
 		}
@@ -214,7 +215,7 @@ module.exports = function (Topics) {
 				oldCid: oldCid,
 			}),
 		]);
-		var hookData = _.clone(data);
+		const hookData = _.clone(data);
 		hookData.fromCid = oldCid;
 		hookData.toCid = cid;
 		hookData.tid = tid;

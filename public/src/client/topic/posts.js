@@ -301,7 +301,7 @@ define('forum/topic/posts', [
 	}
 
 	// function handlePrivateUploads(posts) {
-	// 	if (app.user.uid) {
+	// 	if (app.user.uid || !ajaxify.data.privateUploads) {
 	// 		return;
 	// 	}
 	//
@@ -309,14 +309,16 @@ define('forum/topic/posts', [
 	// 	var loginEl = document.createElement('a');
 	// 	loginEl.className = 'login-required';
 	// 	loginEl.href = config.relative_path + '/login';
-	// 	loginEl.appendChild(document.createTextNode('🔒 Log in to view'));
 	//
-	// 	posts.each(function (idx, postEl) {
-	// 		$(postEl).find('[component="post/content"] img').each(function (idx, imgEl) {
-	// 			imgEl = $(imgEl);
-	// 			if (imgEl.attr('src').startsWith(config.relative_path + config.upload_url)) {
-	// 				imgEl.replaceWith(loginEl.cloneNode(true));
-	// 			}
+	// 	translator.translate('[[topic:login-to-view]]', function (translated) {
+	// 		loginEl.appendChild(document.createTextNode(translated));
+	// 		posts.each(function (idx, postEl) {
+	// 			$(postEl).find('[component="post/content"] img').each(function (idx, imgEl) {
+	// 				imgEl = $(imgEl);
+	// 				if (imgEl.attr('src').startsWith(config.relative_path + config.upload_url)) {
+	// 					imgEl.replaceWith(loginEl.cloneNode(true));
+	// 				}
+	// 			});
 	// 		});
 	// 	});
 	// }

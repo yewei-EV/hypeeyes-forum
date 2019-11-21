@@ -57,7 +57,7 @@ UserReset.send = async function (email) {
 };
 
 UserReset.commit = async function (code, password) {
-	await user.isPasswordValid(password);
+	user.isPasswordValid(password);
 	const validated = await UserReset.validate(code);
 	if (!validated) {
 		throw new Error('[[error:reset-code-not-valid]]');
@@ -86,7 +86,9 @@ UserReset.updateExpiry = async function (uid) {
 	const oneDay = 1000 * 60 * 60 * 24;
 	const expireDays = meta.config.passwordExpiryDays;
 	const expiry = Date.now() + (oneDay * expireDays);
-	await user.setUserField(uid, 'passwordExpiry', expireDays > 0 ? expiry : 0);
+	if (expireDays > 0) {
+		await user.setUserField(uid, 'passwordExpiry', expiry);
+	}
 };
 
 UserReset.clean = async function () {

@@ -2,21 +2,22 @@
 
 const _ = require('lodash');
 
-var db = require('../database');
-var user = require('../user');
-var meta = require('../meta');
-var groups = require('../groups');
-var topics = require('../topics');
-var categories = require('../categories');
-var notifications = require('../notifications');
-var privileges = require('../privileges');
-var plugins = require('../plugins');
-var socketHelpers = require('../socket.io/helpers');
+const db = require('../database');
+const user = require('../user');
+const meta = require('../meta');
+const groups = require('../groups');
+const topics = require('../topics');
+const categories = require('../categories');
+const notifications = require('../notifications');
+const privileges = require('../privileges');
+const plugins = require('../plugins');
+const socketHelpers = require('../socket.io/helpers');
 
 module.exports = function (Posts) {
 	Posts.shouldQueue = async function (uid, data) {
 		const userData = await user.getUserFields(uid, ['uid', 'reputation', 'postcount']);
-		const shouldQueue = meta.config.postQueue && (!userData.uid || userData.reputation < meta.config.postQueueReputationThreshold || userData.postcount <= 0);
+		const isMemberOfExempt = await groups.isMemberOfAny(userData.uid, meta.config.groupsExemptFromPostQueue);
+		const shouldQueue = meta.config.postQueue && !isMemberOfExempt && (!userData.uid || userData.reputation < meta.config.postQueueReputationThreshold || userData.postcount <= 0);
 		const result = await plugins.fireHook('filter:post.shouldQueue', {
 			shouldQueue: !!shouldQueue,
 			uid: uid,

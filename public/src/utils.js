@@ -351,7 +351,7 @@
 			if (!str) {
 				return '';
 			}
-			str = str.replace(utils.trimRegex, '');
+			str = String(str).replace(utils.trimRegex, '');
 			if (utils.isLatin.test(str)) {
 				str = str.replace(utils.invalidLatinChars, '-');
 			} else {
@@ -691,7 +691,9 @@
 		},
 
 		urlToLocation: function (url) {
-			return $('<a href="' + url + '" />')[0];
+			var a = document.createElement('a');
+			a.href = url;
+			return a;
 		},
 
 		// return boolean if string 'true' or string 'false', or if a parsable string which is a number

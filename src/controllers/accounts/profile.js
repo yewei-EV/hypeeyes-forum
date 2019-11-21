@@ -58,16 +58,15 @@ profileController.get = async function (req, res, next) {
 
 	addMetaTags(res, userData);
 
-	userData.selectedGroup = userData.groups.filter(function (group) {
-		return group && userData.groupTitleArray.includes(group.name);
-	});
+	userData.selectedGroup = userData.groups.filter(group => group && userData.groupTitleArray.includes(group.name))
+		.sort((a, b) => userData.groupTitleArray.indexOf(a.name) - userData.groupTitleArray.indexOf(b.name));
 
 	const results = await plugins.fireHook('filter:user.account', { userData: userData, uid: req.uid });
 	res.render('account/profile', results.userData);
 };
 
 async function incrementProfileViews(req, userData) {
-	if (req.uid >= 0) {
+	if (req.uid >= 1) {
 		req.session.uids_viewed = req.session.uids_viewed || {};
 
 		if (req.uid !== userData.uid && (!req.session.uids_viewed[userData.uid] || req.session.uids_viewed[userData.uid] < Date.now() - 3600000)) {
@@ -99,6 +98,7 @@ function addMetaTags(res, userData) {
 		{
 			name: 'title',
 			content: userData.fullname || userData.username,
+			noEscape: true,
 		},
 		{
 			name: 'description',
@@ -107,6 +107,7 @@ function addMetaTags(res, userData) {
 		{
 			property: 'og:title',
 			content: userData.fullname || userData.username,
+			noEscape: true,
 		},
 		{
 			property: 'og:description',
