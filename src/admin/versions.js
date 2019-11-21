@@ -10,7 +10,13 @@ var versionCacheLastModified = '';
 
 var	isPrerelease = /^v?\d+\.\d+\.\d+-.+$/;
 
+var temp = true;
+
 function getLatestVersion(callback) {
+	// do not pull latest version from github
+	if (temp) {
+		return callback(null, 'v1.12.2');
+	}
 	var headers = {
 		Accept: 'application/vnd.github.v3+json',
 		'User-Agent': encodeURIComponent('NodeBB Admin Control Panel/' + meta.config.title),
