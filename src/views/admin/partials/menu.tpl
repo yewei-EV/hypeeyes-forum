@@ -4,8 +4,6 @@
 			<div class="button-group">
 				<!-- IMPORT admin/partials/quick_actions/buttons.tpl -->
 			</div>
-
-			<!-- IMPORT admin/partials/quick_actions/alerts.tpl -->
 		</ul>
 	</section>
 
@@ -157,8 +155,6 @@
 					</div>
 				</div>
 			</form>
-
-			<!-- IMPORT admin/partials/quick_actions/alerts.tpl -->
 
 			<li class="reconnect-spinner">
 				<a href="#" id="reconnect" class="hide" title="[[admin/menu:connection-lost, {title}]]">
