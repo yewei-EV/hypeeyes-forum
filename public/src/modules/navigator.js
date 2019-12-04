@@ -25,6 +25,13 @@ define('navigator', ['forum/pagination', 'components'], function (pagination, co
 		$(window).off('keydown', onKeyDown);
 	});
 
+	navigator.showButton = function () {
+		if ($(this).scrollTop() > 100) {
+			$('#scroll').fadeIn();
+		} else {
+			$('#scroll').fadeOut();
+		}
+	};
 	navigator.init = function (selector, count, toTop, toBottom, callback) {
 		index = 1;
 		navigator.selector = selector;
@@ -37,6 +44,9 @@ define('navigator', ['forum/pagination', 'components'], function (pagination, co
 		paginationBlockMeterEl = paginationBlockEl.find('meter');
 		paginationBlockProgressEl = paginationBlockEl.find('.progress-bar');
 
+		$('#scroll').hide();
+		$(window).off('scroll', navigator.showButton).on('scroll', navigator.showButton);
+		$('#scroll').off('click').on('click', function () { $('html, body').animate({ scrollTop: 0 }, 600); });
 		$(window).off('scroll', navigator.delayedUpdate).on('scroll', navigator.delayedUpdate);
 
 		paginationBlockEl.find('.dropdown-menu').off('click').on('click', function (e) {
