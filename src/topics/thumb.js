@@ -47,8 +47,8 @@ module.exports = function (Topics) {
 
 			await image.resizeImage({
 				path: pathToUpload,
-				width: 269,
-				height: 230,
+				width: 390,
+				height: 260,
 			});
 
 			if (!plugins.hasListeners('filter:uploadImage')) {
