@@ -36,6 +36,15 @@ app.cacheBuster = null;
 		locale: config.userLang,
 	});
 
+	// Added custom Back to top button
+	app.showButton = function () {
+		if ($(this).scrollTop() > 100) {
+			$('#scroll').fadeIn();
+		} else {
+			$('#scroll').fadeOut();
+		}
+	};
+
 	app.load = function () {
 		app.loadProgressiveStylesheet();
 
@@ -336,6 +345,11 @@ app.cacheBuster = null;
 	};
 
 	app.processPage = function () {
+		// Added custom Back to top button
+		$('#scroll').hide();
+		$(window).off('scroll', app.showButton).on('scroll', app.showButton);
+		$('#scroll').off('click').on('click', function () { $('html, body').animate({ scrollTop: 0 }, 600); });
+
 		highlightNavigationLink();
 
 		$('.timeago').timeago();
