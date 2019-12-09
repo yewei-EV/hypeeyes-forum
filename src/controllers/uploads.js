@@ -126,8 +126,8 @@ uploadsController.uploadThumb = async function (req, res, next) {
 		await image.isFileTypeAllowed(uploadedFile.path);
 		await image.resizeImage({
 			path: uploadedFile.path,
-			width: 269,
-			height: 230,
+			width: 390,
+			height: 260,
 		});
 		if (plugins.hasListeners('filter:uploadImage')) {
 			return await plugins.fireHook('filter:uploadImage', {
