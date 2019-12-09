@@ -97,6 +97,7 @@
 		"nodebb-plugin-poll": "^0.3.3",
 		"nodebb-plugin-bilibili": "^0.3.0",
 		"nodebb-plugin-calendar-cn": "^1.0.0-alpha.62",
+		"nodebb-plugin-solr": "5.2.4",
         "nodemailer": "^6.0.0",
         "passport": "^0.4.0",
         "passport-local": "1.0.0",
