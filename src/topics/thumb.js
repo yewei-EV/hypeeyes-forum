@@ -45,11 +45,11 @@ module.exports = function (Topics) {
 
 			await image.isFileTypeAllowed(pathToUpload);
 
-			await image.resizeImage({
-				path: pathToUpload,
-				width: 390,
-				height: 260,
-			});
+			// await image.resizeImage({
+			// 	path: pathToUpload,
+			// 	width: 390,
+			// 	height: 260,
+			// });
 
 			if (!plugins.hasListeners('filter:uploadImage')) {
 				data.thumb = '/assets/uploads/files/' + filename;
