@@ -183,7 +183,7 @@ async function validateSession(socket) {
 	}
 	const sessionData = await getSessionAsync(req.signedCookies[nconf.get('sessionKey')]);
 	if (!sessionData) {
-		throw new Error('[[error:invalid-session]]');
+		return;
 	}
 	const result = await plugins.fireHook('static:sockets.validateSession', {
 		req: req,
