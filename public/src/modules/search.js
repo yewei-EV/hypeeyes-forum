@@ -43,6 +43,10 @@ define('search', ['navigator', 'translator', 'storage'], function (nav, translat
 			return app.alertError('[[error:invalid-search-term]]');
 		}
 
+		if (data.matchWords === 'all') {
+			term = '"' + term + '"';
+		}
+
 		var query = {
 			term: term,
 			in: searchIn,
