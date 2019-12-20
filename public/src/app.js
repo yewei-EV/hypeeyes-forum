@@ -678,7 +678,7 @@ app.cacheBuster = null;
 			var input = $(this).find('input');
 			require(['search'], function (search) {
 				var data = search.getSearchPreferences();
-				data.term = input.val();
+				data.term = '"' + input.val() + '"';
 				$(window).trigger('action:search.submit', { data: data });
 				search.query(data, function () {
 					input.val('');
