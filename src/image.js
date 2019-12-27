@@ -9,11 +9,62 @@ const util = require('util');
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
+const { createCanvas } = require('canvas');
 const file = require('./file');
 const plugins = require('./plugins');
 const meta = require('./meta');
 
+const canvas = createCanvas(200, 200);
+const ctx = canvas.getContext('2d');
+
 const image = module.exports;
+
+function measureText(str, fontSize = 10) {
+	ctx.font = fontSize + 'px solid';
+	return ctx.measureText(str).width;
+}
+
+function getNewText(text, fontSize, maxWidth) {
+	const ellipsis = '...';
+	while (measureText(text + ellipsis, fontSize) >= maxWidth - (fontSize * 2)) {
+		text = text.substr(0, text.length - 1);
+	}
+	return text + ellipsis;
+}
+
+async function watermark(filePath, newFilePath, text) {
+	const sharp = requireSharp();
+	const png = sharp(filePath);
+	const fontSize = 50;
+	const info = await png.metadata();
+	const width = measureText(text, fontSize);
+	if (width > info.width) {
+		text = getNewText(text.substr(0, text.length - 4), fontSize, info.width);
+	}
+
+	const svg = `
+        <svg width="${info.width}" height="80">
+            <g style="overflow:hidden; text-anchor: middle; font-size: 50px;">
+                <defs>
+                    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="10 10" result="glow"/>
+                        <feMerge>
+                            <feMergeNode in="glow"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <text style="filter: url(#glow); fill: black;" y="55" x="50%">${text}</text>
+                <text y="55" style="fill: white;" x="50%">${text}</text>
+            </g>
+        </svg>
+        `;
+	const watermark = Buffer.from(svg);
+	await png
+		.composite([{ input: watermark, gravity: 'south' }])
+		.sharpen()
+		.withMetadata()
+		.toFile(newFilePath);
+}
 
 function requireSharp() {
 	const sharp = require('sharp');
@@ -158,6 +209,10 @@ image.uploadImage = async function (filename, folder, imageData) {
 		path: upload.path,
 		name: imageData.name,
 	};
+};
+
+image.addWatermark = async function (filePath, newFilePath, userName) {
+	await watermark(filePath, newFilePath, '潮目@' + userName);
 };
 
 require('./promisify')(image);

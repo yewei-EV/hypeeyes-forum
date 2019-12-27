@@ -12,6 +12,7 @@ const file = require('../file');
 const plugins = require('../plugins');
 const image = require('../image');
 const privileges = require('../privileges');
+const user = require('../user');
 
 const uploadsController = module.exports;
 
@@ -68,7 +69,7 @@ async function uploadAsImage(req, uploadedFile) {
 	}
 	await image.isFileTypeAllowed(uploadedFile.path);
 
-	let fileObj = await uploadsController.uploadFile(req.uid, uploadedFile);
+	let fileObj = await uploadsController.uploadFile(req.uid, uploadedFile, true);
 
 	if (meta.config.resizeImageWidth === 0 || meta.config.resizeImageWidthThreshold === 0) {
 		return fileObj;
@@ -140,7 +141,7 @@ uploadsController.uploadThumb = async function (req, res, next) {
 	});
 };
 
-uploadsController.uploadFile = async function (uid, uploadedFile) {
+uploadsController.uploadFile = async function (uid, uploadedFile, withWatermark = false) {
 	if (plugins.hasListeners('filter:uploadFile')) {
 		return await plugins.fireHook('filter:uploadFile', {
 			file: uploadedFile,
@@ -163,16 +164,20 @@ uploadsController.uploadFile = async function (uid, uploadedFile) {
 		throw new Error('[[error:invalid-file-type, ' + allowed.join('&#44; ') + ']]');
 	}
 
-	return await saveFileToLocal(uid, uploadedFile);
+	return await saveFileToLocal(uid, uploadedFile, withWatermark);
 };
 
-async function saveFileToLocal(uid, uploadedFile) {
+async function saveFileToLocal(uid, uploadedFile, withWatermark = false) {
 	const name = uploadedFile.name || 'upload';
 	const extension = path.extname(name) || '';
 
 	const filename = Date.now() + '-' + validator.escape(name.substr(0, name.length - extension.length)).substr(0, 255) + extension;
+	let userName = '';
+	if (withWatermark) {
+		userName = await user.getUsernamesByUids([uid]) || '';
+	}
 
-	const upload = await file.saveFileToLocal(filename, 'files', uploadedFile.path);
+	const upload = await file.saveFileToLocal(filename, 'files', uploadedFile.path, withWatermark, userName);
 	const storedFile = {
 		url: nconf.get('relative_path') + upload.url,
 		path: upload.path,

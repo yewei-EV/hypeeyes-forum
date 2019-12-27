@@ -24,7 +24,7 @@ graceful.gracefulify(fs);
 
 const file = module.exports;
 
-file.saveFileToLocal = async function (filename, folder, tempPath) {
+file.saveFileToLocal = async function (filename, folder, tempPath, withWatermark = false, userName = '') {
 	/*
 	 * remarkable doesn't allow spaces in hyperlinks, once that's fixed, remove this.
 	 */
@@ -34,7 +34,12 @@ file.saveFileToLocal = async function (filename, folder, tempPath) {
 
 	winston.verbose('Saving file ' + filename + ' to : ' + uploadPath);
 	await mkdirpAsync(path.dirname(uploadPath));
-	await copyFileAsync(tempPath, uploadPath);
+	if (withWatermark) {
+		const image = require('./image');
+		await image.addWatermark(tempPath, uploadPath, userName);
+	} else {
+		await copyFileAsync(tempPath, uploadPath);
+	}
 	return {
 		url: '/assets/uploads/' + (folder ? folder + '/' : '') + filename,
 		path: uploadPath,

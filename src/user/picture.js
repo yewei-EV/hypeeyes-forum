@@ -109,7 +109,8 @@ module.exports = function (User) {
 		if (!data.imageData && !data.file) {
 			throw new Error('[[error:invalid-data]]');
 		}
-		const size = data.file ? data.file.size : image.sizeFromBase64(data.imageData);
+		// const size = data.file ? data.file.size : image.sizeFromBase64(data.imageData);
+		const size = data.file ? data.file.size : maxSize * 1024;
 		if (size > maxSize * 1024) {
 			throw new Error('[[error:file-too-big, ' + maxSize + ']]');
 		}

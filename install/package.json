@@ -38,6 +38,7 @@
         "body-parser": "^1.18.2",
         "bootstrap": "^3.4.0",
         "bootswatch": "^3",
+	    "canvas": "^2.6.1",
         "chart.js": "^2.7.1",
         "cli-graph": "^3.2.2",
         "clipboard": "^2.0.1",
