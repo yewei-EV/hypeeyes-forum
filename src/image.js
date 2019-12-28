@@ -54,7 +54,7 @@ async function watermark(filePath, newFilePath, text) {
                     </filter>
                 </defs>
                 <text style="filter: url(#glow); fill: black;" y="55" x="50%">${text}</text>
-                <text y="55" style="fill: white;" x="50%">${text}</text>
+                <text y="55" style="fill: white;" x="50%" fill-opacity="0.8">${text}</text>
             </g>
         </svg>
         `;
