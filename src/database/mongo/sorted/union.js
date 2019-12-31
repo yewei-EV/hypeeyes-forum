@@ -44,7 +44,7 @@ module.exports = function (module) {
 		var pipeline = [
 			{ $match: { _key: { $in: params.sets } } },
 			{ $group: { _id: { value: '$value' }, totalScore: aggregate } },
-			{ $sort: { totalScore: params.sort } },
+			{ $sort: { totalScore: params.sort, '_id.value': -1 } },
 		];
 
 		if (params.start) {
