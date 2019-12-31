@@ -35,16 +35,16 @@ function getNewText(text, fontSize, maxWidth) {
 async function watermark(filePath, newFilePath, text) {
 	const sharp = requireSharp();
 	const png = sharp(filePath);
-	const fontSize = 50;
 	const info = await png.metadata();
+	const fontSize = Math.ceil(info.width / 48);
 	const width = measureText(text, fontSize);
 	if (width > info.width) {
 		text = getNewText(text.substr(0, text.length - 4), fontSize, info.width);
 	}
 
 	const svg = `
-        <svg width="${info.width}" height="80">
-            <g style="overflow:hidden; text-anchor: middle; font-size: 50px;">
+        <svg width="${info.width}" height="${fontSize * 1.5}">
+            <g style="overflow:hidden; text-anchor: middle; font-size: ${fontSize}px;">
                 <defs>
                     <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
                         <feGaussianBlur stdDeviation="10 10" result="glow"/>
@@ -53,8 +53,8 @@ async function watermark(filePath, newFilePath, text) {
                         </feMerge>
                     </filter>
                 </defs>
-                <text style="filter: url(#glow); fill: black;" y="55" x="50%">${text}</text>
-                <text y="55" style="fill: white;" x="50%" fill-opacity="0.8">${text}</text>
+                <text y="${fontSize}" style="filter: url(#glow); fill: black;"  x="50%">${text}</text>
+                <text y="${fontSize}" style="fill: white;" x="50%" fill-opacity="0.8">${text}</text>
             </g>
         </svg>
         `;
