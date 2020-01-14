@@ -53,10 +53,6 @@ searchController.search = async function (req, res, next) {
 		qs: req.query,
 	};
 
-	if (req.query.matchWords === 'all') {
-		data.query = '"' + data.query + '"';
-	}
-
 	const [searchData, categoriesData] = await Promise.all([
 		search.search(data),
 		buildCategories(req.uid, searchOnly),
