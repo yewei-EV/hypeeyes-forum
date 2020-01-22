@@ -40,8 +40,10 @@ app.cacheBuster = null;
 	app.showButton = function () {
 		if ($(this).scrollTop() > 100) {
 			$('#scroll').fadeIn();
+			$('#newTopic').fadeIn();
 		} else {
 			$('#scroll').fadeOut();
+			$('#newTopic').fadeOut();
 		}
 	};
 
@@ -346,7 +348,9 @@ app.cacheBuster = null;
 
 	app.processPage = function () {
 		// Added custom Back to top button
+		// Added custom new topic button
 		$('#scroll').hide();
+		$('#newTopic').hide();
 		$(window).off('scroll', app.showButton).on('scroll', app.showButton);
 		$('#scroll').off('click').on('click', function () { $('html, body').animate({ scrollTop: 0 }, 600); });
 
