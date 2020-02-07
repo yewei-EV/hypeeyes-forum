@@ -57,7 +57,6 @@ module.exports = function (Posts) {
 		await Promise.all([
 			db.sortedSetAdd('posts:pid', timestamp, postData.pid),
 			db.incrObjectField('global', 'postCount'),
-			user.onNewPostMade(postData),
 			topics.onNewPostMade(postData),
 			categories.onNewPostMade(topicData.cid, topicData.pinned, postData),
 			groups.onNewPostMade(postData),
@@ -76,6 +75,7 @@ module.exports = function (Posts) {
 			return;
 		}
 		await Promise.all([
+			user.onNewPostMade(postData),
 			db.sortedSetAdd('pid:' + postData.toPid + ':replies', timestamp, postData.pid),
 			db.incrObjectField('post:' + postData.toPid, 'replies'),
 		]);
