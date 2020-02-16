@@ -125,11 +125,10 @@ uploadsController.uploadThumb = async function (req, res, next) {
 			throw new Error('[[error:invalid-file]]');
 		}
 		await image.isFileTypeAllowed(uploadedFile.path);
-		// await image.resizeImage({
-		// 	path: uploadedFile.path,
-		// 	width: 390,
-		// 	height: 260,
-		// });
+		await image.resizeImage({
+			path: uploadedFile.path,
+			width: 1200,
+		});
 		if (plugins.hasListeners('filter:uploadImage')) {
 			return await plugins.fireHook('filter:uploadImage', {
 				image: uploadedFile,
