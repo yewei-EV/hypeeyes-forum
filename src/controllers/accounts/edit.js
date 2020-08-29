@@ -2,7 +2,6 @@
 
 const user = require('../../user');
 const meta = require('../../meta');
-const plugins = require('../../plugins');
 const helpers = require('../helpers');
 const groups = require('../../groups');
 const accountHelpers = require('./helpers');
@@ -67,9 +66,7 @@ editController.get = async function (req, res, next) {
 		},
 	]);
 	userData.editButtons = [];
-
-	const result = await plugins.fireHook('filter:user.account.edit', userData);
-	res.render('account/edit', result);
+	res.render('account/edit', userData);
 };
 
 editController.password = async function (req, res, next) {
@@ -135,10 +132,12 @@ editController.uploadPicture = async function (req, res, next) {
 			return helpers.notAllowed(req, res);
 		}
 		await user.checkMinReputation(req.uid, updateUid, 'min:rep:profile-picture');
-		const image = await user.uploadCroppedPicture({
+
+		const image = await user.uploadCroppedPictureFile({
 			uid: updateUid,
 			file: userPhoto,
 		});
+
 		res.json([{
 			name: userPhoto.name,
 			url: image.url,
@@ -146,25 +145,6 @@ editController.uploadPicture = async function (req, res, next) {
 	} catch (err) {
 		next(err);
 	} finally {
-		file.delete(userPhoto.path);
-	}
-};
-
-editController.uploadCoverPicture = async function (req, res, next) {
-	var params = JSON.parse(req.body.params);
-	var coverPhoto = req.files.files[0];
-	try {
-		await user.checkMinReputation(req.uid, params.uid, 'min:rep:cover-picture');
-		const image = await user.updateCoverPicture({
-			file: coverPhoto,
-			uid: params.uid,
-		});
-		res.json([{
-			url: image.url,
-		}]);
-	} catch (err) {
-		next(err);
-	} finally {
-		file.delete(coverPhoto.path);
+		await file.delete(userPhoto.path);
 	}
 };

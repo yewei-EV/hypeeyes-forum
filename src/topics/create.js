@@ -1,23 +1,24 @@
 
 'use strict';
 
-var _ = require('lodash');
-var validator = require('validator');
+const _ = require('lodash');
+const validator = require('validator');
 
-var db = require('../database');
-var utils = require('../utils');
-var plugins = require('../plugins');
-var analytics = require('../analytics');
-var user = require('../user');
-var meta = require('../meta');
-var posts = require('../posts');
-var privileges = require('../privileges');
-var categories = require('../categories');
+const db = require('../database');
+const utils = require('../utils');
+const plugins = require('../plugins');
+const analytics = require('../analytics');
+const user = require('../user');
+const meta = require('../meta');
+const posts = require('../posts');
+const privileges = require('../privileges');
+const categories = require('../categories');
+const translator = require('../translator');
 
 module.exports = function (Topics) {
 	Topics.create = async function (data) {
 		// This is an internal method, consider using Topics.post instead
-		var timestamp = data.timestamp || Date.now();
+		const timestamp = data.timestamp || Date.now();
 		await Topics.resizeAndUploadThumb(data);
 
 		const tid = await db.incrObjectField('global', 'nextTid');
@@ -47,7 +48,11 @@ module.exports = function (Topics) {
 				'cid:' + topicData.cid + ':tids',
 				'cid:' + topicData.cid + ':uid:' + topicData.uid + ':tids',
 			], timestamp, topicData.tid),
-			db.sortedSetAdd('cid:' + topicData.cid + ':tids:votes', 0, topicData.tid),
+			db.sortedSetsAdd([
+				'topics:views', 'topics:posts', 'topics:votes',
+				'cid:' + topicData.cid + ':tids:votes',
+				'cid:' + topicData.cid + ':tids:posts',
+			], 0, topicData.tid),
 			categories.updateRecentTid(topicData.cid, topicData.tid),
 			user.addTopicIdToUser(topicData.uid, topicData.tid, timestamp),
 			db.incrObjectField('category:' + topicData.cid, 'topic_count'),
@@ -66,9 +71,9 @@ module.exports = function (Topics) {
 		if (data.content) {
 			data.content = utils.rtrim(data.content);
 		}
-		check(data.title, meta.config.minimumTitleLength, meta.config.maximumTitleLength, 'title-too-short', 'title-too-long');
-		check(data.tags, meta.config.minimumTagsPerTopic, meta.config.maximumTagsPerTopic, 'not-enough-tags', 'too-many-tags');
-		check(data.content, meta.config.minimumPostLength, meta.config.maximumPostLength, 'content-too-short', 'content-too-long');
+		Topics.checkTitle(data.title);
+		await Topics.validateTags(data.tags, data.cid);
+		Topics.checkContent(data.content);
 
 		const [categoryExists, canCreate, canTag] = await Promise.all([
 			categories.exists(data.cid),
@@ -130,8 +135,8 @@ module.exports = function (Topics) {
 	};
 
 	Topics.reply = async function (data) {
-		var tid = data.tid;
-		var uid = data.uid;
+		const tid = data.tid;
+		const uid = data.uid;
 
 		const topicData = await Topics.getTopicData(tid);
 		if (!topicData) {
@@ -165,7 +170,7 @@ module.exports = function (Topics) {
 		if (data.content) {
 			data.content = utils.rtrim(data.content);
 		}
-		check(data.content, meta.config.minimumPostLength, meta.config.maximumPostLength, 'content-too-short', 'content-too-long');
+		Topics.checkContent(data.content);
 
 		data.ip = data.req ? data.req.ip : null;
 		let postData = await posts.create(data);
@@ -180,7 +185,13 @@ module.exports = function (Topics) {
 			user.setUserField(uid, 'lastonline', Date.now());
 		}
 
-		Topics.notifyFollowers(postData, uid);
+		Topics.notifyFollowers(postData, uid, {
+			type: 'new-reply',
+			bodyShort: translator.compile('notifications:user_posted_to', postData.user.username, postData.topic.title),
+			nid: 'new_post:tid:' + postData.topic.tid + ':pid:' + postData.pid + ':uid:' + uid,
+			mergeId: 'notifications:user_posted_to|' + postData.topic.tid,
+		});
+
 		analytics.increment(['posts', 'posts:byCid:' + data.cid]);
 		plugins.fireHook('action:topic.reply', { post: _.clone(postData), data: data });
 
@@ -223,6 +234,14 @@ module.exports = function (Topics) {
 
 		return postData;
 	}
+
+	Topics.checkTitle = function (title) {
+		check(title, meta.config.minimumTitleLength, meta.config.maximumTitleLength, 'title-too-short', 'title-too-long');
+	};
+
+	Topics.checkContent = function (content) {
+		check(content, meta.config.minimumPostLength, meta.config.maximumPostLength, 'content-too-short', 'content-too-long');
+	};
 
 	function check(item, min, max, minError, maxError) {
 		// Trim and remove HTML (latter for composers that send in HTML, like redactor)

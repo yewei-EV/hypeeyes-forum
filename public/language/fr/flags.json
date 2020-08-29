@@ -1,8 +1,7 @@
 {
 	"state": "Etat",
-	"reporter": "Rapporteur",
-	"reported-at": "Reporté à",
-	"description": "Description",
+	"reports": "Rapports",
+	"first-reported": "Premier rapport",
 	"no-flags": "Hourra ! Aucun signalement trouvé.",
 	"assignee": "Assigné",
 	"update": "Mise à jour",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Assigné à moi",
 	"filter-cid-all": "Toutes les catégories",
 	"apply-filters": "Appliquer les filtres",
+	"more-filters": "Plus de filtres",
 
-	"quick-links": "Permaliens",
+	"quick-actions": "Actions Rapide",
 	"flagged-user": "Utilisateurs signalés",
 	"view-profile": "Voir le profil",
 	"start-new-chat": "Démarrer un nouveau Chat",
 	"go-to-target": "Voir le signalement cible",
+	"assign-to-me": "Me l'assigner",
+	"delete-post": "Supprimer les messages",
+	"purge-post": "Supprimer définitivement",
+	"restore-post": "Restaurer les messages",
 
 	"user-view": "Voir le profil",
 	"user-edit": "Éditer le profil",
@@ -39,9 +43,11 @@
 	"notes": "Notes de signalement",
 	"add-note": "Ajouter une note",
 	"no-notes": "aucune note partagée",
+	"delete-note-confirm": "Êtes-vous sûr de bien vouloir supprimer cette note de signalement ?",
+	"note-added": "Note ajoutée",
+	"note-deleted": "Note supprimée",
 
-	"history": "Historiques des signalements",
-	"back": "Revenir à la liste des signalements",
+	"history": "Compte &amp; Historique des signalements",
 	"no-history": "aucun historique de signalements",
 
 	"state-all": "Tous les états",
@@ -50,10 +56,14 @@
 	"state-resolved": "Résolu",
 	"state-rejected": "Rejeté",
 	"no-assignee": "Non assigné",
-	"note-added": "Note ajoutée",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Signaler un contenu inapproprié",
-	"modal-body": "Veuillez spécifier votre signalement %1 %2 pour une révision.  Vous pouvez utiliser un des boutons de demande si c'est plus approprié",
+	"modal-body": "Veuillez saisir le motif de votre signalement pour %1 %2 et sélectionner le bouton ci-dessous le plus approprié.",
 	"modal-reason-spam": "Spam",
 	"modal-reason-offensive": "Choquant",
 	"modal-reason-other": "Autre (précisez ci-dessous)",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Le contenu a été soumis pour examen.",
 	"modal-submit-confirm": "Confirmer l'envoi",
 	"modal-submit-confirm-text": "Vous avez déjà spécifié un signalement. Êtes-vous sûr de vouloir soumettre une demande ?",
-	"modal-submit-confirm-text-help": "La soumission d'une demande écrase tous les signalements définis."
+	"modal-submit-confirm-text-help": "La soumission d'une demande écrase tous les signalements définis.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

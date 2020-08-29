@@ -6,6 +6,7 @@ const validator = require('validator');
 
 const meta = require('../meta');
 const plugins = require('../plugins');
+const middleware = require('../middleware');
 
 exports.handle404 = function handle404(req, res) {
 	const relativePath = nconf.get('relative_path');
@@ -20,7 +21,7 @@ exports.handle404 = function handle404(req, res) {
 	}
 
 	if (isClientScript.test(req.url)) {
-		res.type('text/javascript').status(200).send('');
+		res.type('text/javascript').status(404).send('Not Found');
 	} else if (req.path.startsWith(relativePath + '/assets/uploads') || (req.get('accept') && !req.get('accept').includes('text/html')) || req.path === '/favicon.ico') {
 		meta.errors.log404(req.path || '');
 		res.sendStatus(404);
@@ -36,14 +37,12 @@ exports.handle404 = function handle404(req, res) {
 	}
 };
 
-exports.send404 = function (req, res) {
+exports.send404 = async function (req, res) {
 	res.status(404);
 	const path = String(req.path || '');
 	if (res.locals.isAPI) {
 		return res.json({ path: validator.escape(path.replace(/^\/api/, '')), title: '[[global:404.title]]' });
 	}
-	const middleware = require('../middleware');
-	middleware.buildHeader(req, res, function () {
-		res.render('404', { path: validator.escape(path), title: '[[global:404.title]]' });
-	});
+	await middleware.buildHeaderAsync(req, res);
+	res.render('404', { path: validator.escape(path), title: '[[global:404.title]]' });
 };

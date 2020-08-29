@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Klepetajte z",
     "chat.placeholder": "Sem vpišite sporočilo, nato potrdite za pošiljanje.",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Pošlji",
     "chat.no_active": "Ni aktivnih klepetov.",
     "chat.user_typing": "%1 piše sporočilo ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Zadnji klepeti",
     "chat.contacts": "Stiki",
     "chat.message-history": "Zgodovina klepeta",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Klepet v novem oknu",
     "chat.minimize": "Minimize",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Prenesi datoteko",
     "composer.zen_mode": "Zen način",
     "composer.select_category": "Select a category",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "V redu",
     "bootbox.cancel": "Prekliči",
     "bootbox.confirm": "Potrdi",

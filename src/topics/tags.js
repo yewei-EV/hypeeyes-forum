@@ -19,7 +19,7 @@ module.exports = function (Topics) {
 			return;
 		}
 		const result = await plugins.fireHook('filter:tags.filter', { tags: tags, tid: tid });
-		tags = _.uniq(result.tags).slice(0, meta.config.maximumTagsPerTopic || 5)
+		tags = _.uniq(result.tags)
 			.map(tag => utils.cleanUpTag(tag, meta.config.maximumTagLength))
 			.filter(tag => tag && tag.length >= (meta.config.minimumTagLength || 3));
 
@@ -30,6 +30,19 @@ module.exports = function (Topics) {
 		]);
 
 		await Promise.all(tags.map(tag => updateTagCount(tag)));
+	};
+
+	Topics.validateTags = async function (tags, cid) {
+		if (!Array.isArray(tags)) {
+			throw new Error('[[error:invalid-data]]');
+		}
+		tags = _.uniq(tags);
+		const categoryData = await categories.getCategoryFields(cid, ['minTags', 'maxTags']);
+		if (tags.length < parseInt(categoryData.minTags, 10)) {
+			throw new Error('[[error:not-enough-tags, ' + categoryData.minTags + ']]');
+		} else if (tags.length > parseInt(categoryData.maxTags, 10)) {
+			throw new Error('[[error:too-many-tags, ' + categoryData.maxTags + ']]');
+		}
 	};
 
 	async function filterCategoryTags(tags, tid) {
@@ -46,8 +59,6 @@ module.exports = function (Topics) {
 		if (!tag) {
 			throw new Error('[[error:invalid-tag]]');
 		}
-
-		tag = utils.cleanUpTag(tag, meta.config.maximumTagLength);
 		if (tag.length < (meta.config.minimumTagLength || 3)) {
 			throw new Error('[[error:tag-too-short]]');
 		}
@@ -77,6 +88,7 @@ module.exports = function (Topics) {
 		if (!newTagName || tag === newTagName) {
 			return;
 		}
+		newTagName = utils.cleanUpTag(newTagName, meta.config.maximumTagLength);
 		await Topics.createEmptyTag(newTagName);
 		await batch.processSortedSet('tag:' + tag + ':topics', async function (tids) {
 			const scores = await db.sortedSetScores('tag:' + tag + ':topics', tids);
@@ -153,12 +165,15 @@ module.exports = function (Topics) {
 	};
 
 	Topics.getTopicTags = async function (tid) {
-		return await db.getSetMembers('topic:' + tid + ':tags');
+		const tags = await db.getSetMembers('topic:' + tid + ':tags');
+		return tags.sort();
 	};
 
 	Topics.getTopicsTags = async function (tids) {
 		const keys = tids.map(tid => 'topic:' + tid + ':tags');
-		return await db.getSetsMembers(keys);
+		const tags = await db.getSetsMembers(keys);
+		tags.forEach(tags => tags.sort());
+		return tags;
 	};
 
 	Topics.getTopicTagsObjects = async function (tid) {
@@ -191,6 +206,31 @@ module.exports = function (Topics) {
 		});
 
 		return topicTags;
+	};
+
+	Topics.addTags = async function (tags, tids) {
+		const topicData = await Topics.getTopicsFields(tids, ['timestamp']);
+		const sets = tids.map(tid => 'topic:' + tid + ':tags');
+		for (let i = 0; i < tags.length; i++) {
+			/* eslint-disable no-await-in-loop */
+			await Promise.all([
+				db.setsAdd(sets, tags[i]),
+				db.sortedSetAdd('tag:' + tags[i] + ':topics', topicData.map(t => t.timestamp), tids),
+			]);
+			await updateTagCount(tags[i]);
+		}
+	};
+
+	Topics.removeTags = async function (tags, tids) {
+		const sets = tids.map(tid => 'topic:' + tid + ':tags');
+		for (let i = 0; i < tags.length; i++) {
+			/* eslint-disable no-await-in-loop */
+			await Promise.all([
+				db.setsRemove(sets, tags[i]),
+				db.sortedSetRemove('tag:' + tags[i] + ':topics', tids),
+			]);
+			await updateTagCount(tags[i]);
+		}
 	};
 
 	Topics.updateTopicTags = async function (tid, tags) {
@@ -299,7 +339,8 @@ module.exports = function (Topics) {
 
 	Topics.getRelatedTopics = async function (topicData, uid) {
 		if (plugins.hasListeners('filter:topic.getRelatedTopics')) {
-			return await plugins.fireHook('filter:topic.getRelatedTopics', { topic: topicData, uid: uid });
+			const result = await plugins.fireHook('filter:topic.getRelatedTopics', { topic: topicData, uid: uid, topics: [] });
+			return result.topics;
 		}
 
 		let maximumTopics = meta.config.maximumRelatedTopics;

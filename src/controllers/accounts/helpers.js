@@ -11,6 +11,7 @@ const meta = require('../../meta');
 const utils = require('../../utils');
 const privileges = require('../../privileges');
 const translator = require('../../translator');
+const messaging = require('../../messaging');
 
 const helpers = module.exports;
 
@@ -58,7 +59,7 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 
 	userData.isBlocked = results.isBlocked;
 	if (isAdmin || isSelf) {
-		userData.blocksCount = parseInt(userData.blocksCount, 10) || 0;
+		userData.blocksCount = await user.getUserField(userData.uid, 'blocksCount');
 	}
 
 	userData.yourid = callerUID;
@@ -75,6 +76,7 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 	userData.canChangePassword = isAdmin || (isSelf && !meta.config['password:disableEdit']);
 	userData.isSelf = isSelf;
 	userData.isFollowing = results.isFollowing;
+	userData.hasPrivateChat = results.hasPrivateChat;
 	userData.showHidden = isSelf || isAdmin || (isGlobalModerator && !results.isTargetAdmin);
 	userData.groups = Array.isArray(results.groups) && results.groups.length ? results.groups[0] : [];
 	userData.disableSignatures = meta.config.disableSignatures === 1;
@@ -111,8 +113,8 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 	userData['cover:position'] = validator.escape(String(userData['cover:position'] || '50% 50%'));
 	userData['username:disableEdit'] = !userData.isAdmin && meta.config['username:disableEdit'];
 	userData['email:disableEdit'] = !userData.isAdmin && meta.config['email:disableEdit'];
-
-	return userData;
+	const hookData = await plugins.fireHook('filter:helpers.getUserDataByUserSlug', { userData: userData, callerUID: callerUID });
+	return hookData.userData;
 };
 
 async function getAllData(uid, callerUID) {
@@ -132,6 +134,7 @@ async function getAllData(uid, callerUID) {
 		canBanUser: privileges.users.canBanUser(callerUID, uid),
 		isBlocked: user.blocks.is(uid, callerUID),
 		canViewInfo: privileges.global.can('view:users:info', callerUID),
+		hasPrivateChat: messaging.hasPrivateChat(callerUID, uid),
 	});
 }
 
@@ -140,6 +143,7 @@ async function getProfileMenu(uid, callerUID) {
 		id: 'info',
 		route: 'info',
 		name: '[[user:account_info]]',
+		icon: 'fa-info',
 		visibility: {
 			self: false,
 			other: false,
@@ -152,6 +156,7 @@ async function getProfileMenu(uid, callerUID) {
 		id: 'sessions',
 		route: 'sessions',
 		name: '[[pages:account/sessions]]',
+		icon: 'fa-group',
 		visibility: {
 			self: true,
 			other: false,
@@ -167,6 +172,7 @@ async function getProfileMenu(uid, callerUID) {
 			id: 'consent',
 			route: 'consent',
 			name: '[[user:consent.title]]',
+			icon: 'fa-thumbs-o-up',
 			visibility: {
 				self: true,
 				other: false,
@@ -187,6 +193,8 @@ async function getProfileMenu(uid, callerUID) {
 
 async function parseAboutMe(userData) {
 	if (!userData.aboutme) {
+		userData.aboutme = '';
+		userData.aboutmeParsed = '';
 		return;
 	}
 	userData.aboutme = validator.escape(String(userData.aboutme || ''));

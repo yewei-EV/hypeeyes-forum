@@ -1,9 +1,9 @@
 'use strict';
 
-var meta = require('../meta');
-var plugins = require('../plugins');
-var db = require('../database');
-var user = require('../user');
+const meta = require('../meta');
+const plugins = require('../plugins');
+const db = require('../database');
+const user = require('../user');
 
 module.exports = function (Messaging) {
 	Messaging.sendMessage = async (data) => {
@@ -21,7 +21,7 @@ module.exports = function (Messaging) {
 			throw new Error('[[error:invalid-chat-message]]');
 		}
 
-		const maximumChatMessageLength = (meta.config.maximumChatMessageLength || 1000);
+		const maximumChatMessageLength = meta.config.maximumChatMessageLength || 1000;
 		const data = await plugins.fireHook('filter:messaging.checkContent', { content: content });
 		content = String(data.content).trim();
 		if (!content) {
@@ -57,14 +57,10 @@ module.exports = function (Messaging) {
 		await Promise.all([
 			Messaging.addRoomToUsers(data.roomId, uids, timestamp),
 			Messaging.addMessageToUsers(data.roomId, uids, mid, timestamp),
-			Messaging.markUnread(uids, data.roomId),
+			Messaging.markUnread(uids.filter(uid => uid !== String(data.uid)), data.roomId),
 		]);
 
-		const [, messages] = await Promise.all([
-			await Messaging.markRead(data.uid, data.roomId),
-			await Messaging.getMessagesData([mid], data.uid, data.roomId, true),
-		]);
-
+		const messages = await Messaging.getMessagesData([mid], data.uid, data.roomId, true);
 		if (!messages || !messages[0]) {
 			return null;
 		}

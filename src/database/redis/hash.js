@@ -154,6 +154,13 @@ module.exports = function (module) {
 	};
 
 	module.deleteObjectFields = async function (key, fields) {
+		if (!key || !Array.isArray(fields) || !fields.length) {
+			return;
+		}
+		fields = fields.filter(Boolean);
+		if (!fields.length) {
+			return;
+		}
 		await module.client.async.hdel(key, fields);
 		cache.delObjectCache(key);
 	};

@@ -3,17 +3,16 @@
 	"bg-color": "Colore di sfondo",
 	"text-color": "Colore del testo",
 	"create-modify": "Crea e modifica i tag",
-	"description": "Seleziona i tag facendo clic e/o trascinando, utilizza shift per selezionare più tag.",
+	"description": "Seleziona i tag facendo clic o trascinando, utilizza <code>CTRL</code> per selezionare più tag.",
 	"create": "Crea tag",
 	"modify": "Modifica i tag",
 	"rename": "Rinomina i tag",
 	"delete": "Elimina i tag selezionati",
 	"search": "Ricerca per tag...",
-	"settings": "Clicca <a href=\"%1\">qui</a> per visitare la pagina impostazioni tag.",
+	"settings": "Impostazioni tag",
 	"name": "Nome Tag",
 
-	"alerts.editing-multiple": "Modifica di tag multipli",
-	"alerts.editing-x": "Modifica \"%1\" tag",
+	"alerts.editing": "Modifica tag(s)",
 	"alerts.confirm-delete": "Vuoi eliminare i tag selezionati?",
 	"alerts.update-success": "Tag aggiornato!"
 }

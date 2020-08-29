@@ -78,7 +78,8 @@ Groups.getGroupsBySort = async function (sort, start, stop) {
 Groups.getNonPrivilegeGroups = async function (set, start, stop) {
 	let groupNames = await db.getSortedSetRevRange(set, start, stop);
 	groupNames = groupNames.concat(Groups.ephemeralGroups).filter(groupName => !Groups.isPrivilegeGroup(groupName));
-	return await Groups.getGroupsData(groupNames);
+	const groupsData = await Groups.getGroupsData(groupNames);
+	return groupsData.filter(Boolean);
 };
 
 Groups.getGroups = async function (set, start, stop) {
@@ -144,18 +145,48 @@ Groups.getOwners = async function (groupName) {
 
 Groups.getOwnersAndMembers = async function (groupName, uid, start, stop) {
 	const ownerUids = await db.getSetMembers('group:' + groupName + ':owners');
-	const [owners, members] = await Promise.all([
-		user.getUsers(ownerUids, uid),
-		user.getUsersFromSet('group:' + groupName + ':members', uid, start, stop),
-	]);
+	const countToReturn = stop - start + 1;
+	const ownerUidsOnPage = ownerUids.slice(start, stop !== -1 ? stop + 1 : undefined);
+	const owners = await user.getUsers(ownerUidsOnPage, uid);
 	owners.forEach(function (user) {
 		if (user) {
 			user.isOwner = true;
 		}
 	});
 
-	const nonOwners = members.filter(user => user && user.uid && !ownerUids.includes(user.uid.toString()));
-	return owners.concat(nonOwners);
+	let done = false;
+	let returnUsers = owners;
+	let memberStart = start - ownerUids.length;
+	let memberStop = memberStart + countToReturn - 1;
+	memberStart = Math.max(0, memberStart);
+	memberStop = Math.max(0, memberStop);
+	async function addMembers(start, stop) {
+		let batch = await user.getUsersFromSet('group:' + groupName + ':members', uid, start, stop);
+		if (!batch.length) {
+			done = true;
+		}
+		batch = batch.filter(user => user && user.uid && !ownerUids.includes(user.uid.toString()));
+		returnUsers = returnUsers.concat(batch);
+	}
+
+	if (stop === -1) {
+		await addMembers(memberStart, -1);
+	} else {
+		while (returnUsers.length < countToReturn && !done) {
+			/* eslint-disable no-await-in-loop */
+			await addMembers(memberStart, memberStop);
+			memberStart = memberStop + 1;
+			memberStop = memberStart + countToReturn - 1;
+		}
+	}
+	returnUsers = countToReturn > 0 ? returnUsers.slice(0, countToReturn) : returnUsers;
+	const result = await plugins.fireHook('filter:group.getOwnersAndMembers', {
+		users: returnUsers,
+		uid: uid,
+		start: start,
+		stop: stop,
+	});
+	return result.users;
 };
 
 Groups.getByGroupslug = async function (slug, options) {
@@ -203,4 +234,4 @@ Groups.existsBySlug = async function (slug) {
 	return await db.isObjectField('groupslug:groupname', slug);
 };
 
-Groups.async = require('../promisify')(Groups);
+require('../promisify')(Groups);

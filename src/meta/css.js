@@ -29,7 +29,6 @@ var buildImports = {
 			'@import (inline) "../public/vendor/colorpicker/colorpicker.css";',
 			'@import (inline) "../node_modules/cropperjs/dist/cropper.css";',
 			'@import "../../public/less/flags.less";',
-			'@import "../../public/less/admin/manage/ip-blacklist.less";',
 			'@import "../../public/less/generics.less";',
 			'@import "../../public/less/mixins.less";',
 			'@import "../../public/less/global.less";',
@@ -165,8 +164,8 @@ function getBundleMetadata(target, callback) {
 				skin: function (cb) {
 					const skinImport = [];
 					if (themeData && themeData.bootswatchSkin) {
-						skinImport.push('\n@import "./bootswatch/' + themeData.bootswatchSkin + '/variables.less";');
-						skinImport.push('\n@import "./bootswatch/' + themeData.bootswatchSkin + '/bootswatch.less";');
+						skinImport.push('\n@import "./@nodebb/bootswatch/' + themeData.bootswatchSkin + '/variables.less";');
+						skinImport.push('\n@import "./@nodebb/bootswatch/' + themeData.bootswatchSkin + '/bootswatch.less";');
 					}
 
 					cb(null, skinImport.join(''));
@@ -200,7 +199,7 @@ CSS.buildBundle = function (target, fork, callback) {
 			getBundleMetadata(target, next);
 		},
 		function (data, next) {
-			var minify = global.env !== 'development';
+			var minify = process.env.NODE_ENV !== 'development';
 			minifier.css.bundle(data.imports, data.paths, minify, fork, next);
 		},
 		function (bundle, next) {

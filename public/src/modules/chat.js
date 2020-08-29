@@ -70,12 +70,9 @@ define('chat', [
 				roomData.silent = true;
 				roomData.uid = app.user.uid;
 				roomData.isSelf = isSelf;
-				module.createModal(roomData, function (modal) {
+				module.createModal(roomData, function () {
 					if (!isSelf) {
 						updateTitleAndPlaySound(data.message.mid, username);
-					}
-					if (!modal) {
-						addMessageToModal(data);
 					}
 				});
 			});
@@ -87,11 +84,16 @@ define('chat', [
 		var username = data.message.fromUser.username;
 		var isSelf = data.self === 1;
 		require(['forum/chats/messages'], function (ChatsMessages) {
-			ChatsMessages.appendChatMessage(modal.find('.chat-content'), data.message);
+			// don't add if already added
+			if (!modal.find('[data-mid="' + data.message.messageId + '"]').length) {
+				ChatsMessages.appendChatMessage(modal.find('.chat-content'), data.message);
+			}
 
 			if (modal.is(':visible')) {
 				taskbar.updateActive(modal.attr('data-uuid'));
-				ChatsMessages.scrollToBottom(modal.find('.chat-content'));
+				if (ChatsMessages.isAtBottom(modal.find('.chat-content'))) {
+					ChatsMessages.scrollToBottom(modal.find('.chat-content'));
+				}
 			} else if (!ajaxify.data.template.chats) {
 				module.toggleNew(modal.attr('data-uuid'), true, true);
 			}
@@ -121,7 +123,7 @@ define('chat', [
 	};
 
 	module.onRoomRename = function (data) {
-		var newTitle = $('<div/>').html(data.newName).text();
+		var newTitle = $('<div></div>').html(data.newName).text();
 		var modal = module.getModal(data.roomId);
 		modal.find('[component="chat/room/name"]').text(newTitle);
 		taskbar.update('chat', modal.attr('data-uuid'), {
@@ -145,7 +147,7 @@ define('chat', [
 		require(['scrollStop', 'forum/chats', 'forum/chats/messages'], function (scrollStop, Chats, ChatsMessages) {
 			app.parseAndTranslate('chat', data, function (chatModal) {
 				if (module.modalExists(data.roomId)) {
-					return callback(null);
+					return callback(module.getModal(data.roomId));
 				}
 				var uuid = utils.generateUUID();
 				var dragged = false;
@@ -239,10 +241,11 @@ define('chat', [
 				Chats.createAutoComplete(chatModal.find('[component="chat/input"]'));
 
 				Chats.addScrollHandler(chatModal.attr('data-roomid'), data.uid, chatModal.find('.chat-content'));
+				Chats.addScrollBottomHandler(chatModal.find('.chat-content'));
 
 				Chats.addCharactersLeftHandler(chatModal);
 				Chats.addIPHandler(chatModal);
-				ChatsMessages.onChatMessageEdit();
+				ChatsMessages.addSocketListeners();
 
 				taskbar.push('chat', chatModal.attr('data-uuid'), {
 					title: '[[modules:chat.chatting_with]] ' + (data.roomName || (data.users.length ? data.users[0].username : '')),

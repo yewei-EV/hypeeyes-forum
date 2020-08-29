@@ -163,6 +163,13 @@
 					[[admin/settings/post:timestamp.cut-off-help]]
 				</p>
 			</div>
+			<div class="form-group">
+				<label for="necroThreshold">[[admin/settings/post:timestamp.necro-threshold]]</label>
+				<input type="number" class="form-control" id="necroThreshold" data-field="necroThreshold"  />
+				<p class="help-block">
+					[[admin/settings/post:timestamp.necro-threshold-help]]
+				</p>
+			</div>
 		</form>
 	</div>
 </div>
@@ -203,6 +210,10 @@
 	<div class="col-sm-2 col-xs-12 settings-header">[[admin/settings/post:recent]]</div>
 	<div class="col-sm-10 col-xs-12">
 		<form>
+			<div class="form-group">
+				<label for="recentMaxTopics">[[admin/settings/post:recent.max-topics]]</label>
+				<input id="recentMaxTopics" type="text" class="form-control" value="200" data-field="recentMaxTopics">
+			</div>
 			<div class="checkbox">
 				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
 					<input class="mdl-switch__input" type="checkbox" data-field="disableRecentCategoryFilter">

@@ -12,7 +12,9 @@ const nconf = require('nconf');
 const url = require('url');
 const util = require('util');
 
-global.env = process.env.TEST_ENV || 'production';
+process.env.NODE_ENV = process.env.TEST_ENV || 'production';
+global.env = process.env.NODE_ENV || 'production';
+
 
 const winston = require('winston');
 const packageInfo = require('../../package');
@@ -37,9 +39,9 @@ const urlObject = url.parse(nconf.get('url'));
 const relativePath = urlObject.pathname !== '/' ? urlObject.pathname : '';
 nconf.set('relative_path', relativePath);
 
-if (!nconf.get('isCluster')) {
-	nconf.set('isPrimary', 'true');
-	nconf.set('isCluster', 'true');
+if (nconf.get('isCluster') === undefined) {
+	nconf.set('isPrimary', true);
+	nconf.set('isCluster', true);
 }
 
 const dbType = nconf.get('database');
@@ -133,8 +135,10 @@ before(async function () {
 	nconf.set('theme_templates_path', meta.config['theme:templates'] ? path.join(nconf.get('themes_path'), meta.config['theme:id'], meta.config['theme:templates']) : nconf.get('base_templates_path'));
 	nconf.set('theme_config', path.join(nconf.get('themes_path'), 'nodebb-theme-persona', 'theme.json'));
 	nconf.set('bcrypt_rounds', 1);
-
+	nconf.set('socket.io:origins', '*:*');
 	nconf.set('version', packageInfo.version);
+	nconf.set('runJobs', false);
+	nconf.set('jobsDisabled', false);
 
 	await meta.dependencies.check();
 
@@ -182,7 +186,7 @@ async function setupMockDefaults() {
 	const rimraf = util.promisify(require('rimraf'));
 	await rimraf('test/uploads');
 
-	const mkdirp = util.promisify(require('mkdirp'));
+	const mkdirp = require('mkdirp');
 
 	const folders = [
 		'test/uploads',
@@ -211,22 +215,23 @@ async function setupDefaultConfigs(meta) {
 async function giveDefaultGlobalPrivileges() {
 	const privileges = require('../../src/privileges');
 	await privileges.global.give([
-		'chat', 'upload:post:image', 'signature', 'search:content',
-		'search:users', 'search:tags', 'local:login', 'view:users', 'view:tags', 'view:groups',
+		'groups:chat', 'groups:upload:post:image', 'groups:signature', 'groups:search:content',
+		'groups:search:users', 'groups:search:tags', 'groups:local:login', 'groups:view:users',
+		'groups:view:tags', 'groups:view:groups',
 	], 'registered-users');
 	await privileges.global.give([
-		'view:users', 'view:tags', 'view:groups',
+		'groups:view:users', 'groups:view:tags', 'groups:view:groups',
 	], 'guests');
 }
 
 async function enableDefaultPlugins() {
 	winston.info('Enabling default plugins\n');
-
+	const testPlugins = Array.isArray(nconf.get('test_plugins')) ? nconf.get('test_plugins') : [];
 	const defaultEnabled = [
 		'nodebb-plugin-dbsearch',
 		'nodebb-plugin-soundpack-default',
 		'nodebb-widget-essentials',
-	];
+	].concat(testPlugins);
 
 	winston.info('[install/enableDefaultPlugins] activating default plugins', defaultEnabled);
 

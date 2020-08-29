@@ -1,8 +1,7 @@
 {
 	"state": "Estado",
-	"reporter": "Reportador",
-	"reported-at": "Reportado en",
-	"description": "Descripción",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Yeah! No se encontraron indicadores",
 	"assignee": "Asignado",
 	"update": "Actualizar",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Asignado a mí",
 	"filter-cid-all": "Todas las categorias",
 	"apply-filters": "Aplicar filtros",
+	"more-filters": "More Filters",
 
-	"quick-links": "Links rapidos",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "Usuario marcado",
 	"view-profile": "Ver perfil",
 	"start-new-chat": "Empezar nuevo chat",
 	"go-to-target": "Ver objetivo marcado",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "Ver perfil",
 	"user-edit": "Editar perfil",
@@ -39,9 +43,11 @@
 	"notes": "Marcar notas",
 	"add-note": "Añadir nota",
 	"no-notes": "No hay notas compartidas",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Nota añadida",
+	"note-deleted": "Note Deleted",
 
-	"history": "Historico de marcadores",
-	"back": "Volver a la lista de marcadores",
+	"history": "Account &amp; Flag History",
 	"no-history": "No hay registro de marcadores",
 
 	"state-all": "Todos los estados",
@@ -50,7 +56,11 @@
 	"state-resolved": "Resuelto",
 	"state-rejected": "Rechazado",
 	"no-assignee": "Sin asignar",
-	"note-added": "Nota añadida",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Reportar contenido inapropiado",
 	"modal-body": "Por favor especifica tu razón para marcar %1 %2 para revisar. Alternativamente, usa una de los botones  de reporte rápido si corresponde.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "El contenido se ha reportado para moderación.",
 	"modal-submit-confirm": "Confirmar envío",
 	"modal-submit-confirm-text": "Ya tienes una razón personalizada. ¿Estás seguro/a de que deseas enviar mediante reporte rápido?",
-	"modal-submit-confirm-text-help": "Enviar un reporte rápido sobreescribirá cualquier razón personalizada definida."
+	"modal-submit-confirm-text-help": "Enviar un reporte rápido sobreescribirá cualquier razón personalizada definida.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

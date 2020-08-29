@@ -22,11 +22,17 @@ module.exports = function (privileges) {
 			});
 		}
 
+		const keys = await utils.promiseParallel({
+			users: plugins.fireHook('filter:privileges.list', privileges.userPrivilegeList.slice()),
+			groups: plugins.fireHook('filter:privileges.groups.list', privileges.groupPrivilegeList.slice()),
+		});
+
 		const payload = await utils.promiseParallel({
 			labels: getLabels(),
-			users: helpers.getUserPrivileges(cid, 'filter:privileges.list', privileges.userPrivilegeList),
-			groups: helpers.getGroupPrivileges(cid, 'filter:privileges.groups.list', privileges.groupPrivilegeList),
+			users: helpers.getUserPrivileges(cid, keys.users),
+			groups: helpers.getGroupPrivileges(cid, keys.groups),
 		});
+		payload.keys = keys;
 
 		// This is a hack because I can't do {labels.users.length} to echo the count in templates.js
 		payload.columnCountUser = payload.labels.users.length + 2;
@@ -45,14 +51,12 @@ module.exports = function (privileges) {
 			user.isModerator(uid, cid),
 		]);
 
-		const privData = _.zipObject(privs, userPrivileges);
+		const combined = userPrivileges.map(allowed => allowed || isAdministrator);
+		const privData = _.zipObject(privs, combined);
 		const isAdminOrMod = isAdministrator || isModerator;
 
 		return await plugins.fireHook('filter:privileges.categories.get', {
-			'topics:create': privData['topics:create'] || isAdministrator,
-			'topics:read': privData['topics:read'] || isAdministrator,
-			'topics:tag': privData['topics:tag'] || isAdministrator,
-			read: privData.read || isAdministrator,
+			...privData,
 			cid: cid,
 			uid: uid,
 			editable: isAdminOrMod,
@@ -110,6 +114,7 @@ module.exports = function (privileges) {
 		return await utils.promiseParallel({
 			categories: categories.getCategoriesFields(cids, ['disabled']),
 			allowedTo: helpers.isUserAllowedTo(privilege, uid, cids),
+			view_deleted: helpers.isUserAllowedTo('posts:view_deleted', uid, cids),
 			isAdmin: user.isAdministrator(uid),
 		});
 	};
@@ -128,12 +133,22 @@ module.exports = function (privileges) {
 		return uids.filter((uid, index) => allowedTo[index] || isAdmins[index]);
 	};
 
-	privileges.categories.give = async function (privileges, cid, groupName) {
-		await helpers.giveOrRescind(groups.join, privileges, cid, groupName);
+	privileges.categories.give = async function (privileges, cid, members) {
+		await helpers.giveOrRescind(groups.join, privileges, cid, members);
+		plugins.fireHook('action:privileges.categories.give', {
+			privileges: privileges,
+			cids: Array.isArray(cid) ? cid : [cid],
+			members: Array.isArray(members) ? members : [members],
+		});
 	};
 
-	privileges.categories.rescind = async function (privileges, cid, groupName) {
-		await helpers.giveOrRescind(groups.leave, privileges, cid, groupName);
+	privileges.categories.rescind = async function (privileges, cid, members) {
+		await helpers.giveOrRescind(groups.leave, privileges, cid, members);
+		plugins.fireHook('action:privileges.categories.rescind', {
+			privileges: privileges,
+			cids: Array.isArray(cid) ? cid : [cid],
+			members: Array.isArray(members) ? members : [members],
+		});
 	};
 
 	privileges.categories.canMoveAllTopics = async function (currentCid, targetCid, uid) {

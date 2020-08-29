@@ -3,7 +3,7 @@
 
 var assert = require('assert');
 var JSDOM = require('jsdom').JSDOM;
-var utils = require('./../public/src/utils.js');
+var utils = require('../public/src/utils.js');
 const db = require('./mocks/databasemock');
 
 describe('Utility Methods', function () {
@@ -63,9 +63,29 @@ describe('Utility Methods', function () {
 			assert.equal(utils.isUserNameValid(username), false, 'accepted as valid username');
 		});
 
+		it('should reject new lines', function () {
+			assert.equal(utils.isUserNameValid('myusername\r\n'), false);
+		});
+
+		it('should reject new lines', function () {
+			assert.equal(utils.isUserNameValid('myusername\n'), false);
+		});
+
+		it('should reject tabs', function () {
+			assert.equal(utils.isUserNameValid('myusername\t'), false);
+		});
+
 		it('accepts square brackets', function () {
 			var username = '[best clan] julian';
 			assert(utils.isUserNameValid(username), 'invalid username');
+		});
+
+		it('accepts regular username', function () {
+			assert(utils.isUserNameValid('myusername'), 'invalid username');
+		});
+
+		it('accepts quotes', function () {
+			assert(utils.isUserNameValid('baris "the best" usakli'), 'invalid username');
 		});
 	});
 
@@ -397,14 +417,6 @@ describe('Utility Methods', function () {
 		assert.strictEqual(utils.rtrim('\tthing\t\t'), '\tthing');
 		assert.strictEqual(utils.rtrim('\t thing \t'), '\t thing');
 		done();
-	});
-
-	it('should walk directory', function (done) {
-		utils.walk(__dirname, function (err, data) {
-			assert.ifError(err);
-			assert(Array.isArray(data));
-			done();
-		});
 	});
 
 	it('should profile function', function (done) {

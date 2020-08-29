@@ -11,12 +11,22 @@
 			</div>
 
 			<div class="privilege-table-container">
-				<!-- IF cid -->
-				<!-- IMPORT admin/partials/categories/privileges.tpl -->
-				<!-- ELSE -->
-				<!-- IMPORT admin/partials/global/privileges.tpl -->
-				<!-- ENDIF cid -->
+				{{{ if cid }}}
+				<!-- IMPORT admin/partials/privileges/category.tpl -->
+				{{{ else }}}
+				<!-- IMPORT admin/partials/privileges/global.tpl -->
+				{{{ endif }}}
 			</div>
 		</div>
 	</form>
+</div>
+
+<div class="floating-button">
+	<button id="discard" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+		<i class="material-icons">delete</i>
+	</button>
+
+	<button id="save" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored primary">
+		<i class="material-icons">save</i>
+	</button>
 </div>

@@ -8,6 +8,7 @@ const db = require('../database');
 const user = require('../user');
 const batch = require('../batch');
 const meta = require('../meta');
+const cache = require('../cache');
 
 
 module.exports = function (Groups) {
@@ -54,7 +55,10 @@ module.exports = function (Groups) {
 			payload.disableLeave = values.disableLeave ? '1' : '0';
 		}
 
-		await checkNameChange(groupName, values.name);
+		if (values.hasOwnProperty('name')) {
+			await checkNameChange(groupName, values.name);
+		}
+
 		if (values.hasOwnProperty('private')) {
 			await updatePrivacy(groupName, values.private);
 		}
@@ -125,11 +129,15 @@ module.exports = function (Groups) {
 	}
 
 	async function checkNameChange(currentName, newName) {
+		if (Groups.isPrivilegeGroup(newName)) {
+			throw new Error('[[error:invalid-group-name]]');
+		}
 		const currentSlug = utils.slugify(currentName);
 		const newSlug = utils.slugify(newName);
 		if (currentName === newName || currentSlug === newSlug) {
 			return;
 		}
+		Groups.validateGroupName(newName);
 		const [group, exists] = await Promise.all([
 			Groups.getGroupData(currentName),
 			Groups.existsBySlug(newSlug),
@@ -173,6 +181,7 @@ module.exports = function (Groups) {
 		const allGroups = await db.getSortedSetRange('groups:createtime', 0, -1);
 		const keys = allGroups.map(group => 'group:' + group + ':members');
 		await renameGroupsMember(keys, oldName, newName);
+		cache.del(keys);
 
 		await db.rename('group:' + oldName, 'group:' + newName);
 		await db.rename('group:' + oldName + ':members', 'group:' + newName + ':members');

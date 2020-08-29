@@ -38,7 +38,7 @@ Meta.userOrGroupExists = async function (slug) {
 	return userExists || groupExists;
 };
 
-if (nconf.get('isPrimary') === 'true') {
+if (nconf.get('isPrimary')) {
 	pubsub.on('meta:restart', function (data) {
 		if (data.hostname !== os.hostname()) {
 			restart();
@@ -68,4 +68,4 @@ Meta.getSessionTTLSeconds = function () {
 	return ttl;
 };
 
-Meta.async = require('../promisify')(Meta);
+require('../promisify')(Meta);

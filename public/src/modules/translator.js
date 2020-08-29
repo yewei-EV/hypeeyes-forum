@@ -2,7 +2,7 @@
 
 (function (factory) {
 	function loadClient(language, namespace) {
-		return Promise.resolve(jQuery.getJSON(config.relative_path + '/assets/language/' + language + '/' + namespace + '.json?' + config['cache-buster']));
+		return Promise.resolve(jQuery.getJSON([config.assetBaseUrl, 'language', language, namespace].join('/') + '.json?' + config['cache-buster']));
 	}
 	var warn = function () { console.warn.apply(console, arguments); };
 	if (typeof define === 'function' && define.amd) {
@@ -278,7 +278,7 @@
 			}
 
 			if (namespace && !key) {
-				warn('Missing key in translation token "' + name + '"');
+				warn('Missing key in translation token "' + name + '" for language "' + self.lang + '"');
 				return Promise.resolve('[[' + namespace + ']]');
 			}
 
@@ -286,7 +286,7 @@
 			return translation.then(function (translated) {
 				// check if the translation is missing first
 				if (!translated) {
-					warn('Missing translation "' + name + '"');
+					warn('Missing translation "' + name + '" for language "' + self.lang + '"');
 					return backup || key;
 				}
 
@@ -361,7 +361,7 @@
 
 			var nodes = descendantTextNodes(element);
 			var text = nodes.map(function (node) {
-				return node.nodeValue;
+				return utils.escapeHTML(node.nodeValue);
 			}).join('  ||  ');
 
 			var attrNodes = attributes.reduce(function (prev, attr) {
@@ -527,6 +527,12 @@
 		unescape: Translator.unescape,
 		getLanguage: Translator.getLanguage,
 
+		flush: function () {
+			Object.keys(Translator.cache).forEach(function (code) {
+				Translator.cache[code].translations = {};
+			});
+		},
+
 		/**
 		 * Legacy translator function for backwards compatibility
 		 */
@@ -599,7 +605,7 @@
 				}
 
 				var originalSettings = assign({}, jQuery.timeago.settings.strings);
-				jQuery.getScript(config.relative_path + '/assets/vendor/jquery/timeago/locales/jquery.timeago.' + languageCode + '-short.js').done(function () {
+				jQuery.getScript(config.assetBaseUrl + '/vendor/jquery/timeago/locales/jquery.timeago.' + languageCode + '-short.js').done(function () {
 					adaptor.timeagoShort = assign({}, jQuery.timeago.settings.strings);
 					jQuery.timeago.settings.strings = assign({}, originalSettings);
 					toggle();
@@ -614,7 +620,7 @@
 			delete adaptor.timeagoShort;
 
 			var languageCode = utils.userLangToTimeagoCode(config.userLang);
-			jQuery.getScript(config.relative_path + '/assets/vendor/jquery/timeago/locales/jquery.timeago.' + languageCode + '.js').done(callback);
+			jQuery.getScript(config.assetBaseUrl + '/vendor/jquery/timeago/locales/jquery.timeago.' + languageCode + '.js').done(callback);
 		},
 
 		prepareDOM: function prepareDOM() {

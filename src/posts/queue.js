@@ -50,13 +50,18 @@ module.exports = function (Posts) {
 		const now = Date.now();
 		const id = type + '-' + now;
 		await canPost(type, data);
-		await db.sortedSetAdd('post:queue', now, id);
-		await db.setObject('post:queue:' + id, {
+
+		let payload = {
 			id: id,
 			uid: data.uid,
 			type: type,
-			data: JSON.stringify(data),
-		});
+			data: data,
+		};
+		payload = await plugins.fireHook('filter:post-queue.save', payload);
+		payload.data = JSON.stringify(data);
+
+		await db.sortedSetAdd('post:queue', now, id);
+		await db.setObject('post:queue:' + id, payload);
 		await user.setUserField(data.uid, 'lastqueuetime', now);
 
 		const cid = await getCid(type, data);
@@ -93,6 +98,14 @@ module.exports = function (Posts) {
 			topic: 'topics:create',
 			reply: 'topics:reply',
 		};
+
+		topics.checkContent(data.content);
+		if (type === 'topic') {
+			topics.checkTitle(data.title);
+			if (data.tags) {
+				await topics.validateTags(data.tags);
+			}
+		}
 
 		const [canPost] = await Promise.all([
 			privileges.categories.can(typeToPrivilege[type], cid, data.uid),
@@ -147,23 +160,31 @@ module.exports = function (Posts) {
 		socketHelpers.notifyNew(data.uid, 'newPost', result);
 	}
 
-	Posts.editQueuedContent = async function (uid, id, content) {
-		const canEditQueue = await Posts.canEditQueue(uid, id);
+	Posts.editQueuedContent = async function (uid, editData) {
+		const canEditQueue = await Posts.canEditQueue(uid, editData);
 		if (!canEditQueue) {
 			throw new Error('[[error:no-privileges]]');
 		}
-		const data = await getParsedObject(id);
+		const data = await getParsedObject(editData.id);
 		if (!data) {
 			return;
 		}
-		data.data.content = content;
-		await db.setObjectField('post:queue:' + id, 'data', JSON.stringify(data.data));
+		if (editData.content !== undefined) {
+			data.data.content = editData.content;
+		}
+		if (editData.title !== undefined) {
+			data.data.title = editData.title;
+		}
+		if (editData.cid !== undefined) {
+			data.data.cid = editData.cid;
+		}
+		await db.setObjectField('post:queue:' + editData.id, 'data', JSON.stringify(data.data));
 	};
 
-	Posts.canEditQueue = async function (uid, id) {
+	Posts.canEditQueue = async function (uid, editData) {
 		const [isAdminOrGlobalMod, data] = await Promise.all([
 			user.isAdminOrGlobalMod(uid),
-			getParsedObject(id),
+			getParsedObject(editData.id),
 		]);
 		if (!data) {
 			return false;
@@ -179,6 +200,11 @@ module.exports = function (Posts) {
 		} else if (data.type === 'reply') {
 			cid = await topics.getTopicField(data.data.tid, 'cid');
 		}
-		return await user.isModerator(uid, cid);
+		const isModerator = await user.isModerator(uid, cid);
+		let isModeratorOfTargetCid = true;
+		if (editData.cid) {
+			isModeratorOfTargetCid = await user.isModerator(uid, editData.cid);
+		}
+		return isModerator && isModeratorOfTargetCid;
 	};
 };

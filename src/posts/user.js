@@ -1,16 +1,16 @@
 'use strict';
 
-var async = require('async');
-var validator = require('validator');
-var _ = require('lodash');
+const async = require('async');
+const validator = require('validator');
+const _ = require('lodash');
 
 const db = require('../database');
-var user = require('../user');
+const user = require('../user');
 const topics = require('../topics');
-var groups = require('../groups');
-var meta = require('../meta');
-var plugins = require('../plugins');
-var privileges = require('../privileges');
+const groups = require('../groups');
+const meta = require('../meta');
+const plugins = require('../plugins');
+const privileges = require('../privileges');
 
 module.exports = function (Posts) {
 	Posts.getUserInfoForPosts = async function (uids, uid) {
@@ -123,13 +123,15 @@ module.exports = function (Posts) {
 	};
 
 	Posts.changeOwner = async function (pids, toUid) {
-		const exists = user.exists(toUid);
+		const exists = await user.exists(toUid);
 		if (!exists) {
 			throw new Error('[[error:no-user]]');
 		}
-		const postData = await Posts.getPostsFields(pids, ['pid', 'tid', 'uid', 'timestamp', 'upvotes', 'downvotes']);
-		pids = postData.filter(p => p.pid && p.uid !== parseInt(toUid, 10))
-			.map(p => p.pid);
+		let postData = await Posts.getPostsFields(pids, [
+			'pid', 'tid', 'uid', 'content', 'deleted', 'timestamp', 'upvotes', 'downvotes',
+		]);
+		postData = postData.filter(p => p.pid && p.uid !== parseInt(toUid, 10));
+		pids = postData.map(p => p.pid);
 
 		const cids = await Posts.getCidsByPids(pids);
 
@@ -158,11 +160,17 @@ module.exports = function (Posts) {
 			db.sortedSetRemoveBulk(bulkRemove),
 			db.sortedSetAddBulk(bulkAdd),
 			user.incrementUserPostCountBy(toUid, pids.length),
-			updateReputation(toUid, repChange),
+			user.incrementUserReputationBy(toUid, repChange),
 			handleMainPidOwnerChange(postData, toUid),
 			reduceCounters(postsByUser),
 			updateTopicPosters(postData, toUid),
 		]);
+
+		plugins.fireHook('action:post.changeOwner', {
+			posts: _.cloneDeep(postData),
+			toUid: toUid,
+		});
+		return postData;
 	};
 
 	async function reduceCounters(postsByUser) {
@@ -170,7 +178,7 @@ module.exports = function (Posts) {
 			const repChange = posts.reduce((acc, val) => acc + val.votes, 0);
 			await Promise.all([
 				user.incrementUserPostCountBy(uid, -posts.length),
-				updateReputation(uid, -repChange),
+				user.incrementUserReputationBy(uid, -repChange),
 			]);
 		});
 	}
@@ -186,17 +194,11 @@ module.exports = function (Posts) {
 		});
 	}
 
-	async function updateReputation(uid, change) {
-		if (!change) {
-			return;
-		}
-		const newReputation = await user.incrementUserFieldBy(uid, 'reputation', change);
-		await db.sortedSetAdd('users:reputation', newReputation, uid);
-	}
-
 	async function handleMainPidOwnerChange(postData, toUid) {
 		const tids = _.uniq(postData.map(p => p.tid));
-		const topicData = await topics.getTopicsFields(tids, ['mainPid', 'timestamp']);
+		const topicData = await topics.getTopicsFields(tids, [
+			'tid', 'cid', 'deleted', 'title', 'uid', 'mainPid', 'timestamp',
+		]);
 		const tidToTopic = _.zipObject(tids, topicData);
 
 		const mainPosts = postData.filter(p => p.pid === tidToTopic[p.tid].mainPid);
@@ -224,12 +226,21 @@ module.exports = function (Posts) {
 			user.incrementUserFieldBy(toUid, 'topiccount', mainPosts.length),
 			reduceTopicCounts(postsByUser),
 		]);
+
+		const changedTopics = mainPosts.map(p => tidToTopic[p.tid]);
+		plugins.fireHook('action:topic.changeOwner', {
+			topics: _.cloneDeep(changedTopics),
+			toUid: toUid,
+		});
 	}
 
 	async function reduceTopicCounts(postsByUser) {
 		await async.eachSeries(Object.keys(postsByUser), async function (uid) {
 			const posts = postsByUser[uid];
-			await user.incrementUserFieldBy(uid, 'topiccount', -posts.length);
+			const exists = await user.exists(uid);
+			if (exists) {
+				await user.incrementUserFieldBy(uid, 'topiccount', -posts.length);
+			}
 		});
 	}
 };

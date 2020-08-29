@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "とチャット",
     "chat.placeholder": "メッセージを入力し、Enterで送信",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "送信",
     "chat.no_active": "チャットはありません。",
     "chat.user_typing": "%1 が入力中 ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "最近のチャット",
     "chat.contacts": "お問い合わせ",
     "chat.message-history": "メッセージ履歴",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "チャット設定",
     "chat.pop-out": "チャットを別ウィンドウで表示する",
     "chat.minimize": "最小化",
@@ -57,6 +59,7 @@
     "composer.upload-file": "ファイルをアップロード",
     "composer.zen_mode": "Zen モード",
     "composer.select_category": "カテゴリを選択",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "キャンセル",
     "bootbox.confirm": "確認",

@@ -5,7 +5,8 @@ define('topicList', [
 	'handleBack',
 	'topicSelect',
 	'categorySearch',
-], function (infinitescroll, handleBack, topicSelect, categorySearch) {
+	'forum/category/tools',
+], function (infinitescroll, handleBack, topicSelect, categorySearch, categoryTools) {
 	var TopicList = {};
 	var templateName = '';
 
@@ -24,6 +25,7 @@ define('topicList', [
 
 	$(window).on('action:ajaxify.start', function () {
 		TopicList.removeListeners();
+		categoryTools.removeListeners();
 	});
 
 	TopicList.init = function (template, cb) {
@@ -31,6 +33,8 @@ define('topicList', [
 
 		templateName = template;
 		loadTopicsCallback = cb || loadTopicsAfter;
+
+		categoryTools.init();
 
 		TopicList.watchForNewPosts();
 
@@ -199,7 +203,11 @@ define('topicList', [
 				});
 			}
 			var categoryEl = $(this);
-			var cid = $(this).attr('data-cid');
+			var link = categoryEl.find('a').attr('href');
+			if (link && link !== '#' && link.length) {
+				return;
+			}
+			var cid = categoryEl.attr('data-cid');
 			if (ev.ctrlKey) {
 				selectChildren(cid, !categoryEl.find('[component="category/select/icon"]').hasClass('fa-check'));
 			}

@@ -16,7 +16,9 @@ module.exports = function (User) {
 			'username', 'email', 'fullname', 'website', 'location',
 			'groupTitle', 'birthday', 'signature', 'aboutme',
 		];
-
+		if (!data.uid) {
+			throw new Error('[[error:invalid-update-uid]]');
+		}
 		const updateUid = data.uid;
 
 		const result = await plugins.fireHook('filter:user.updateProfile', { uid: uid, data: data, fields: fields });
@@ -111,6 +113,9 @@ module.exports = function (User) {
 		if (!data.website) {
 			return;
 		}
+		if (data.website.length > 255) {
+			throw new Error('[[error:invalid-website]]');
+		}
 		await User.checkMinReputation(callerUid, data.uid, 'min:rep:website');
 	}
 
@@ -136,13 +141,13 @@ module.exports = function (User) {
 	}
 
 	function isFullnameValid(data) {
-		if (data.fullname && validator.isURL(data.fullname)) {
+		if (data.fullname && (validator.isURL(data.fullname) || data.fullname.length > 255)) {
 			throw new Error('[[error:invalid-fullname]]');
 		}
 	}
 
 	function isLocationValid(data) {
-		if (data.location && validator.isURL(data.location)) {
+		if (data.location && (validator.isURL(data.location) || data.location.length > 255)) {
 			throw new Error('[[error:invalid-location]]');
 		}
 	}
@@ -159,8 +164,27 @@ module.exports = function (User) {
 	}
 
 	function isGroupTitleValid(data) {
-		if (data.groupTitle === 'registered-users' || groups.isPrivilegeGroup(data.groupTitle)) {
-			throw new Error('[[error:invalid-group-title]]');
+		function checkTitle(title) {
+			if (title === 'registered-users' || groups.isPrivilegeGroup(title)) {
+				throw new Error('[[error:invalid-group-title]]');
+			}
+		}
+		if (!data.groupTitle) {
+			return;
+		}
+		let groupTitles = [];
+		if (validator.isJSON(data.groupTitle)) {
+			groupTitles = JSON.parse(data.groupTitle);
+			if (!Array.isArray(groupTitles)) {
+				throw new Error('[[error:invalid-group-title]]');
+			}
+			groupTitles.forEach(title => checkTitle(title));
+		} else {
+			groupTitles = [data.groupTitle];
+			checkTitle(data.groupTitle);
+		}
+		if (!meta.config.allowMultipleBadges && groupTitles.length > 1) {
+			data.groupTitle = JSON.stringify(groupTitles[0]);
 		}
 	}
 
@@ -254,19 +278,18 @@ module.exports = function (User) {
 		if (meta.config['password:disableEdit'] && !isAdmin) {
 			throw new Error('[[error:no-privileges]]');
 		}
-		let isAdminOrPasswordMatch = false;
+
 		const isSelf = parseInt(uid, 10) === parseInt(data.uid, 10);
-		if (
-			(isAdmin && !isSelf) || // Admins ok
-			(!hasPassword && isSelf)	// Initial password set ok
-		) {
-			isAdminOrPasswordMatch = true;
-		} else {
-			isAdminOrPasswordMatch = await User.isPasswordCorrect(uid, data.currentPassword, data.ip);
+
+		if (!isAdmin && !isSelf) {
+			throw new Error('[[user:change_password_error_privileges]]');
 		}
 
-		if (!isAdminOrPasswordMatch) {
-			throw new Error('[[user:change_password_error_wrong_current]]');
+		if (isSelf && hasPassword) {
+			const correct = await User.isPasswordCorrect(data.uid, data.currentPassword, data.ip);
+			if (!correct) {
+				throw new Error('[[user:change_password_error_wrong_current]]');
+			}
 		}
 
 		const hashedPassword = await User.hashPassword(data.newPassword);
@@ -279,6 +302,6 @@ module.exports = function (User) {
 			User.auth.revokeAllSessions(data.uid),
 		]);
 
-		plugins.fireHook('action:password.change', { uid: uid });
+		plugins.fireHook('action:password.change', { uid: uid, targetUid: data.uid });
 	};
 };

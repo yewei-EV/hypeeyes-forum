@@ -1,9 +1,11 @@
 'use strict';
 
-var db = require('../database');
-var user = require('../user');
-var utils = require('../utils');
-var plugins = require('../plugins');
+const validator = require('validator');
+
+const db = require('../database');
+const user = require('../user');
+const utils = require('../utils');
+const plugins = require('../plugins');
 
 const intFields = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
 
@@ -16,15 +18,9 @@ module.exports = function (Messaging) {
 		}
 
 		const keys = mids.map(mid => 'message:' + mid);
-		let messages;
-		if (fields.length) {
-			messages = await db.getObjectsFields(keys, fields);
-		} else {
-			messages = await db.getObjects(keys);
-		}
+		const messages = await (fields.length ? db.getObjectsFields(keys, fields) : db.getObjects(keys));
 
-		messages.forEach(message => modifyMessage(message, fields));
-		return messages;
+		return await Promise.all(messages.map(async (message, idx) => modifyMessage(message, fields, parseInt(mids[idx], 10))));
 	};
 
 	Messaging.getMessageField = async (mid, field) => {
@@ -79,6 +75,8 @@ module.exports = function (Messaging) {
 
 		messages = await Promise.all(messages.map(async (message) => {
 			if (message.system) {
+				message.content = validator.escape(String(message.content));
+				message.cleanedContent = utils.stripHTMLTags(utils.decodeHTMLEntities(message.content));
 				return message;
 			}
 
@@ -97,6 +95,8 @@ module.exports = function (Messaging) {
 					message.newSet = true;
 				} else if (index > 0 && message.fromuid !== messages[index - 1].fromuid) {
 					// If the previous message was from the other person, this is also a new set
+					message.newSet = true;
+				} else if (index === 0) {
 					message.newSet = true;
 				}
 
@@ -133,7 +133,7 @@ module.exports = function (Messaging) {
 	};
 };
 
-function modifyMessage(message, fields) {
+async function modifyMessage(message, fields, mid) {
 	if (message) {
 		db.parseIntFields(message, intFields, fields);
 		if (message.hasOwnProperty('timestamp')) {
@@ -143,4 +143,12 @@ function modifyMessage(message, fields) {
 			message.editedISO = utils.toISOString(message.edited);
 		}
 	}
+
+	const payload = await plugins.fireHook('filter:messaging.getFields', {
+		mid: mid,
+		message: message,
+		fields: fields,
+	});
+
+	return payload.message;
 }

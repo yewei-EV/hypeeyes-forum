@@ -64,7 +64,7 @@ module.exports = function (Topics) {
 	topicTools.purge = async function (tid, uid) {
 		const topicData = await Topics.getTopicData(tid);
 		if (!topicData) {
-			return;
+			throw new Error('[[error:no-topic]]');
 		}
 		const canPurge = await privileges.topics.canPurge(tid, uid);
 		if (!canPurge) {
@@ -93,7 +93,8 @@ module.exports = function (Topics) {
 			throw new Error('[[error:no-privileges]]');
 		}
 		await Topics.setTopicField(tid, 'locked', lock ? 1 : 0);
-		topicData.isLocked = lock;
+		topicData.isLocked = lock; // deprecate in v2.0
+		topicData.locked = lock;
 
 		plugins.fireHook('action:topic.lock', { topic: _.clone(topicData), uid: uid });
 		return topicData;
@@ -138,7 +139,8 @@ module.exports = function (Topics) {
 
 		await Promise.all(promises);
 
-		topicData.isPinned = pin;
+		topicData.isPinned = pin; // deprecate in v2.0
+		topicData.pinned = pin;
 
 		plugins.fireHook('action:topic.pin', { topic: _.clone(topicData), uid: uid });
 

@@ -37,7 +37,10 @@
 			});
 		}
 
-		$('[component="logout"]').on('click', app.logout);
+		$('[component="logout"]').on('click', function () {
+			app.logout();
+			return false;
+		});
 
 		configureSlidemenu();
 		setupNProgress();
@@ -69,7 +72,7 @@
 
 			// If index is requested, load the dashboard
 			if (url === 'admin') {
-				url = 'admin/general/dashboard';
+				url = 'admin/dashboard';
 			}
 
 			url = [config.relative_path, url].join('/');
@@ -98,12 +101,17 @@
 				pageTitle = '[[admin/menu:section-plugins]] > ' + mainTitle;
 			} else {
 				var matches = url.match(/admin\/(.+?)\/(.+?)$/);
-				mainTitle = '[[admin/menu:' + matches[1] + '/' + matches[2] + ']]';
-				pageTitle = '[[admin/menu:section-' +
-					(matches[1] === 'development' ? 'advanced' : matches[1]) +
-					']]' + (matches[2] ? (' > ' + mainTitle) : '');
-				if (matches[2] === 'settings') {
-					mainTitle = translator.compile('admin/menu:settings.page-title', mainTitle);
+				if (matches) {
+					mainTitle = '[[admin/menu:' + matches[1] + '/' + matches[2] + ']]';
+					pageTitle = '[[admin/menu:section-' +
+						(matches[1] === 'development' ? 'advanced' : matches[1]) +
+						']]' + (matches[2] ? (' > ' + mainTitle) : '');
+					if (matches[2] === 'settings') {
+						mainTitle = translator.compile('admin/menu:settings.page-title', mainTitle);
+					}
+				} else {
+					mainTitle = '[[admin/menu:dashboard]]';
+					pageTitle = '[[admin/menu:dashboard]]';
 				}
 			}
 

@@ -12,9 +12,12 @@
 	"unban": "Togli Ban Utente(i)",
 	"reset-lockout": "Reset Blocco",
 	"reset-flags": "Reset segnalazioni",
-	"delete": "Rimuovi Utente(i)",
-	"purge": "Rimuovi Utente(i) e Contenuto",
+	"delete": "Elimina<strong>Utente(i)</strong>",
+	"delete-content": "Elimina <strong>contenuto</strong> utente/i",
+	"purge": "Elimina <strong>Utenti</strong> e <strong>Contenuto</strong>",
 	"download-csv": "Scarica CSV",
+	"manage-groups": "Gestisci Gruppi",
+	"add-group": "Aggiungi Gruppo",
 	"invite": "Invito",
 	"new": "Nuovo utente",
 
@@ -91,9 +94,11 @@
 	"alerts.validate-email-success": "Email validate",
 	"alerts.validate-force-password-reset-success": "Le password degli utenti sono resettate e la loro sessione è revocata.",
 	"alerts.password-reset-confirm": "Vuoi realmente inviare il reset della(e) password via email per questo(i) utente(i)",
-	"alerts.confirm-delete": "<b>Attenzione!</b><br/>Vuoi realmente cancellare l'utente / gli utenti?<br/>Questa azione è irreversibile! Saranno cancellati soltanto gli account degli utenti, i post e gli argomenti rimarranno.",
+	"alerts.confirm-delete": "<strong>Avvertimento!</strong><p>Vuoi davvero eliminare <strong>l'utente(i)</strong>?</p><p>Questa azione non è reversibile! Solo l'account utente sarà eliminato, i suoi post e le sue discussioni rimarranno.</p>",
 	"alerts.delete-success": "Utente(i) Cancellato(i)",
-	"alerts.confirm-purge": "<b>Attenzione!</b><br/>Vuoi realmente cancella l'utente / gli utenti?<br/>Questa azione è irreversibile! Tutti i dati dell'utente e il contenuto saranno rimossi!",
+	"alerts.confirm-delete-content": "<strong>Avvertimento!</strong>Vuoi davvero eliminare il <strong>contenuto</strong> di questo utente(i)?<p><p>Questa azione non è reversibile! Gli account degli utenti rimarranno, ma i loro post e discussioni saranno eliminati.",
+	"alerts.delete-content-success": "Contenuto dell'utente(i) eliminato!",
+	"alerts.confirm-purge": "<strong>Avvertimento!</strong><p>Vuoi davvero eliminare <strong>l'utente(i) e il suo contenuto</strong>?</p><p>Questa azione non è reversibile! Tutti i dati e i contenuti dell'utente saranno cancellati!</p>",
 	"alerts.create": "Utente creato",
 	"alerts.button-create": "Crea",
 	"alerts.button-cancel": "Cancella",
@@ -103,5 +108,5 @@
 
 	"alerts.prompt-email": "Emails:",
 	"alerts.email-sent-to": "Un invito è stato inviato tramite mail a %1",
-	"alerts.x-users-found": "%1 utente(i) trovato! La ricerca ha impiegato %2 ms."
+	"alerts.x-users-found": "%1 utente(i) trovato(i), (%2 secondi)"
 }

@@ -1,8 +1,7 @@
 {
 	"state": "Stan",
-	"reporter": "Zgłaszający",
-	"reported-at": "Zgłoszono o",
-	"description": "Opis",
+	"reports": "Zgłoszenia",
+	"first-reported": "Pierwszy zgłoszony",
 	"no-flags": "Hura! Nie znaleziono flag.",
 	"assignee": "Oflagowany",
 	"update": "Zaktualizuj",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Przypisane do mnie",
 	"filter-cid-all": "Wszystkie kategorie",
 	"apply-filters": "Zastosuj filtry",
+	"more-filters": "Więcej filtrów",
 
-	"quick-links": "Szybkie odnośniki",
+	"quick-actions": "Szybkie Akcje",
 	"flagged-user": "Oflagowany użytkownik",
 	"view-profile": "Zobacz profil",
 	"start-new-chat": "Rozpocznij nowy czat",
 	"go-to-target": "Zobacz cel flagowania",
+	"assign-to-me": "Przypisz do mnie",
+	"delete-post": "Usuń post",
+	"purge-post": "Wyczyść post",
+	"restore-post": "Przywróć post",
 
 	"user-view": "Zobacz profil",
 	"user-edit": "Edytuj profil",
@@ -39,9 +43,11 @@
 	"notes": "Notatki do flagi",
 	"add-note": "Dodaj notatkę",
 	"no-notes": "Brak udostępnionych notatek",
+	"delete-note-confirm": "Czy na pewno chcesz usunąć tę notatkę do flagi?",
+	"note-added": "Dodano notatkę",
+	"note-deleted": "Notatka usunięta",
 
-	"history": "Historia flag",
-	"back": "Wróć do listy flag",
+	"history": "Konto i historia flag",
 	"no-history": "Brak historii flag",
 
 	"state-all": "Wszystkie stany",
@@ -50,7 +56,11 @@
 	"state-resolved": "Rozwiązano",
 	"state-rejected": "Odrzucono",
 	"no-assignee": "Nie przypisano",
-	"note-added": "Dodano notatkę",
+
+	"sort": "Sortuj według",
+	"sort-newest": "Najpierw najnowsze",
+	"sort-oldest": "Najpierw najstarsze",
+	"sort-reports": "Najwięcej zgłoszeń",
 
 	"modal-title": "Zgłoś niewłaściwe treści",
 	"modal-body": "Wskaż powód oflagowania i zgłoszenia %1 %2 do oceny. Jeśli to możliwe, użyj jednego z przycisków szybkiego zgłoszenia.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Treści zostały oflagowane i zgłoszone do moderacji.",
 	"modal-submit-confirm": "Potwierdź wysłanie",
 	"modal-submit-confirm-text": "Wskazałeś już własny powód. Czy na pewno chcesz skorzystać z szybkiego zgłoszenia?",
-	"modal-submit-confirm-text-help": "Wysłanie szybkiego zgłoszenia spowoduje nadpisanie wszelkich własnych powodów"
+	"modal-submit-confirm-text-help": "Wysłanie szybkiego zgłoszenia spowoduje nadpisanie wszelkich własnych powodów",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Oznacz flagi jako rozwiązane",
+	"bulk-success": "Zaktualizowano %1 flag"
 }

@@ -52,7 +52,7 @@ Analytics.increment = function (keys, callback) {
 	}
 };
 
-Analytics.pageView = function (payload) {
+Analytics.pageView = async function (payload) {
 	pageViews += 1;
 
 	if (payload.uid > 0) {
@@ -71,20 +71,16 @@ Analytics.pageView = function (payload) {
 			ipCache.set(payload.ip + nconf.get('secret'), hash);
 		}
 
-		db.sortedSetScore('ip:recent', hash, function (err, score) {
-			if (err) {
-				return;
-			}
-			if (!score) {
-				uniqueIPCount += 1;
-			}
-			var today = new Date();
-			today.setHours(today.getHours(), 0, 0, 0);
-			if (!score || score < today.getTime()) {
-				uniquevisitors += 1;
-				db.sortedSetAdd('ip:recent', Date.now(), hash);
-			}
-		});
+		const score = await db.sortedSetScore('ip:recent', hash);
+		if (!score) {
+			uniqueIPCount += 1;
+		}
+		const today = new Date();
+		today.setHours(today.getHours(), 0, 0, 0);
+		if (!score || score < today.getTime()) {
+			uniquevisitors += 1;
+			await db.sortedSetAdd('ip:recent', Date.now(), hash);
+		}
 	}
 };
 
@@ -142,12 +138,17 @@ Analytics.writeData = async function () {
 	try {
 		await Promise.all(dbQueue);
 	} catch (err) {
-		winston.error('[analytics] Encountered error while writing analytics to data store', err);
+		winston.error('[analytics] Encountered error while writing analytics to data store', err.stack);
 		throw err;
 	}
 };
 
 Analytics.getHourlyStatsForSet = async function (set, hour, numHours) {
+	// Guard against accidental ommission of `analytics:` prefix
+	if (!set.startsWith('analytics:')) {
+		set = 'analytics:' + set;
+	}
+
 	const terms = {};
 	const hoursArr = [];
 
@@ -176,6 +177,11 @@ Analytics.getHourlyStatsForSet = async function (set, hour, numHours) {
 };
 
 Analytics.getDailyStatsForSet = async function (set, day, numDays) {
+	// Guard against accidental ommission of `analytics:` prefix
+	if (!set.startsWith('analytics:')) {
+		set = 'analytics:' + set;
+	}
+
 	const daysArr = [];
 	day = new Date(day);
 	day.setDate(day.getDate() + 1);	// set the date to tomorrow, because getHourlyStatsForSet steps *backwards* 24 hours to sum up the values
@@ -183,7 +189,7 @@ Analytics.getDailyStatsForSet = async function (set, day, numDays) {
 
 	while (numDays > 0) {
 		/* eslint-disable no-await-in-loop */
-		const dayData = await Analytics.getHourlyStatsForSet(set, day.getTime() - (1000 * 60 * 60 * 24 * numDays), 24);
+		const dayData = await Analytics.getHourlyStatsForSet(set, day.getTime() - (1000 * 60 * 60 * 24 * (numDays - 1)), 24);
 		daysArr.push(dayData.reduce((cur, next) => cur + next));
 		numDays -= 1;
 	}
@@ -232,4 +238,4 @@ Analytics.getBlacklistAnalytics = async function () {
 	});
 };
 
-Analytics.async = require('./promisify')(Analytics);
+require('./promisify')(Analytics);

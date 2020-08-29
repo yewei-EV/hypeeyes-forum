@@ -11,6 +11,7 @@
 	"num-recent-replies": "# de Respostas Recentes",
 	"ext-link": "Link Externo",
 	"is-section": "Trate esta categoria como uma seção",
+	"tag-whitelist": "Tag Whitelist",
 	"upload-image": "Enviar Imagem",
 	"delete-image": "Remover",
 	"category-image": "Imagem da Categoria",
@@ -26,6 +27,8 @@
 	"enable": "Ativar",
 	"disable": "Desativar",
 	"edit": "Editar",
+	"analytics": "Analytics",
+	"view-category": "View category",
 
 	"select-category": "Selecionar Categoria",
 	"set-parent-category": "Definir Categoria-Mãe",
@@ -63,7 +66,6 @@
 	"alert.create-success": "Categoria criada com sucesso!",
 	"alert.none-active": "Você não possui categorias ativas.",
 	"alert.create": "Criar uma Categoria",
-	"alert.confirm-moderate": "<strong>Você tem certeza que deseja conceder privilégios de moderação para este grupo de usuários?</strong> Este grupo é público, e quaisquer usuários podem entrar à vontade.",
 	"alert.confirm-purge": "<p class=\"lead\">Você realmente quer purgar esta categoria \"%1\"?</p><h5><strong class=\"text-danger\">Aviso!</strong> Todos os tópicos e posts desta categoria serão purgados!</h5> <p class=\"help-block\">Purgar uma categoria removerá todos os tópicos e posts, e deletará a categoria do banco de dados. Se você quiser remover uma categoria <em>temporariamente</em>, ao invés de fazer isso nós recomendados que você \"desabilite\" a categoria.</p>",
 	"alert.purge-success": "Categoria purgada!",
 	"alert.copy-success": "Configurações Copiadas!",
@@ -75,7 +77,9 @@
 	"alert.user-search": "Procure por um usuário aqui...",
 	"alert.find-group": "Encontre um Grupo",
 	"alert.group-search": "Pesquise por um grupo aqui...",
+	"alert.not-enough-whitelisted-tags": "Whitelisted tags are less than minimum tags, you need to create more whitelisted tags!",
 	"collapse-all": "Esconder todos",
 	"expand-all": "Expandir todos",
-	"disable-on-create": "Desativar ao criar"
+	"disable-on-create": "Desativar ao criar",
+	"no-matches": "No matches"
 }

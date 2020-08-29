@@ -46,12 +46,24 @@ module.exports = function (Posts) {
 		await Posts.setPostFields(data.pid, postData);
 
 		if (meta.config.enablePostHistory === 1) {
-			await Posts.diffs.save(data.pid, oldContent, data.content);
+			await Posts.diffs.save({
+				pid: data.pid,
+				uid: data.uid,
+				oldContent: oldContent,
+				newContent: data.content,
+			});
 		}
 		await Posts.uploads.sync(data.pid);
 
 		postData.cid = topic.cid;
 		postData.topic = topic;
+
+		await topics.notifyFollowers(postData, data.uid, {
+			type: 'post-edit',
+			bodyShort: translator.compile('notifications:user_edited_post', editor.username, postData.topic.title),
+			nid: 'edit_post:' + postData.pid + ':uid:' + data.uid,
+		});
+
 		plugins.fireHook('action:post.edit', { post: _.clone(postData), data: data, uid: data.uid });
 
 		require('./cache').del(String(postData.pid));
@@ -79,6 +91,7 @@ module.exports = function (Posts) {
 			return {
 				tid: tid,
 				cid: topicData.cid,
+				title: validator.escape(String(topicData.title)),
 				isMainPost: false,
 				renamed: false,
 			};
@@ -104,6 +117,8 @@ module.exports = function (Posts) {
 				throw new Error('[[error:no-privileges]]');
 			}
 		}
+		await topics.validateTags(data.tags, topicData.cid);
+
 		const results = await plugins.fireHook('filter:topic.edit', { req: data.req, topic: newTopicData, data: data });
 		await db.setObject('topic:' + tid, results.topic);
 		await topics.updateTopicTags(tid, data.tags);

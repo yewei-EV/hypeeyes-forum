@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Chat with",
     "chat.placeholder": "Upišite poruku ovdje, ENTER za slanje",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Pošalji",
     "chat.no_active": "Nemate aktivnih razgovora.",
     "chat.user_typing": "%1 piše poruku ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Nedavni razgovori",
     "chat.contacts": "Kontakti",
     "chat.message-history": "Povijest razgovora",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Pop out razgovor",
     "chat.minimize": "Smanji",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Učitaj datoteku",
     "composer.zen_mode": "Zen",
     "composer.select_category": "Odaberi kategoriju",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Odbaci",
     "bootbox.confirm": "Potvrdi",

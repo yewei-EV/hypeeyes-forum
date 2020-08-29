@@ -11,6 +11,7 @@
 	"num-recent-replies": "# nedavnih objava",
 	"ext-link": "Vanjska poveznica",
 	"is-section": "Treat this category as a section",
+	"tag-whitelist": "Tag Whitelist",
 	"upload-image": "Učitaj sliku",
 	"delete-image": "Ukloni",
 	"category-image": "Slika kategorije",
@@ -26,6 +27,8 @@
 	"enable": "Omogući",
 	"disable": "Onemogući",
 	"edit": "Uredi",
+	"analytics": "Analytics",
+	"view-category": "View category",
 
 	"select-category": "Odabri kategoriju",
 	"set-parent-category": "Postavi roditeljsku kategoriju ",
@@ -63,7 +66,6 @@
 	"alert.create-success": "Kategorija uspješno kreirana!",
 	"alert.none-active": "Nemate aktivnih kategorija.",
 	"alert.create": "Napravi kategoriju",
-	"alert.confirm-moderate": "<strong>Are you sure you wish to grant the moderation privilege to this user group?</strong> This group is public, and any users can join at will.",
 	"alert.confirm-purge": "<p class=\"lead\">Do you really want to purge this category \"%1\"?</p><h5><strong class=\"text-danger\">Warning!</strong> All topics and posts in this category will be purged!</h5> <p class=\"help-block\">Purging a category will remove all topics and posts, and delete the category from the database. If you want to remove a category <em>temporarily</em>, you'll want to \"disable\" the category instead.</p>",
 	"alert.purge-success": "Kategorija odbačena!",
 	"alert.copy-success": "Postavke kopirane!",
@@ -75,7 +77,9 @@
 	"alert.user-search": "Pretraži korisnika ovdje ...",
 	"alert.find-group": "Pronađi grupu",
 	"alert.group-search": "Pretraži grupu ovdje ...",
+	"alert.not-enough-whitelisted-tags": "Whitelisted tags are less than minimum tags, you need to create more whitelisted tags!",
 	"collapse-all": "Collapse All",
 	"expand-all": "Expand All",
-	"disable-on-create": "Disable on create"
+	"disable-on-create": "Disable on create",
+	"no-matches": "No matches"
 }

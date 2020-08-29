@@ -4,7 +4,6 @@ const _ = require('lodash');
 
 const db = require('../database');
 const user = require('../user');
-
 const cache = require('../cache');
 
 module.exports = function (Groups) {

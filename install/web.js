@@ -81,7 +81,7 @@ web.install = function (port) {
 
 	async.parallel([compileLess, compileJS, copyCSS, loadDefaults], function (err) {
 		if (err) {
-			winston.error(err);
+			winston.error(err.stack);
 		}
 		setupRoutes();
 		launchExpress(port);
@@ -223,14 +223,17 @@ function launch(req, res) {
 }
 
 function compileLess(callback) {
-	fs.readFile(path.join(__dirname, '../public/less/install.less'), function (err, style) {
+	var installSrc = path.join(__dirname, '../public/less/install.less');
+	fs.readFile(installSrc, function (err, style) {
 		if (err) {
-			return winston.error('Unable to read LESS install file: ', err);
+			return winston.error('Unable to read LESS install file: ', err.stack);
 		}
 
-		less.render(style.toString(), function (err, css) {
+		less.render(style.toString(), {
+			filename: path.resolve(installSrc),
+		}, function (err, css) {
 			if (err) {
-				return winston.error('Unable to compile LESS: ', err);
+				return winston.error('Unable to compile LESS: ', err.stack);
 			}
 
 			fs.writeFile(path.join(__dirname, '../public/installer.css'), css.css, callback);

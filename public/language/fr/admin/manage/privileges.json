@@ -1,8 +1,9 @@
 {
 	"global": "Global",
-	"global.no-users": "Aucun privilège global spécifique à l'utilisateur.",
+	"admin": "Admin",
 	"group-privileges": "Privilèges de groupe",
 	"user-privileges": "Privilèges d'utilisateur",
+	"edit-privileges": "Éditer les privilèges",
 	"chat": "Chat",
 	"upload-images": "Images envoyées",
 	"upload-files": "Fichiers envoyés",
@@ -31,5 +32,21 @@
 	"downvote-posts": "Messages négatifs",
 	"delete-topics": "Supprimer les sujets",
 	"purge": "Purger",
-	"moderate": "Modérer"
+	"moderate": "Modérer",
+	"admin-dashboard": "Tableau de bord",
+	"admin-categories": "Catégories",
+	"admin-privileges": "Privilèges",
+	"admin-users": "Utilisateurs",
+	"admin-settings": "Paramètres",
+
+	"alert.confirm-moderate": "<strong>Are you sure you wish to grant the moderation privilege to this user group?</strong> This group is public, and any users can join at will.",
+	"alert.confirm-save": "Please confirm your intention to save these privileges",
+	"alert.saved": "Privilege changes saved and applied",
+	"alert.confirm-discard": "Are you sure you wish to discard your privilege changes?",
+	"alert.discarded": "Privilege changes discarded",
+	"alert.confirm-copyToAll": "Are you sure you wish to apply this privilege set to <strong>all categories</strong>?",
+	"alert.confirm-copyToAllGroup": "Are you sure you wish to apply this group's privilege set to <strong>all categories</strong>?",
+	"alert.confirm-copyToChildren": "Are you sure you wish to apply this privilege set to <strong>all descendant (child) categories</strong>?",
+	"alert.confirm-copyToChildrenGroup": "Are you sure you wish to apply this group's privilege set to <strong>all descendant (child) categories</strong>?",
+	"alert.no-undo": "<em>This action cannot be undone.</em>"
 }

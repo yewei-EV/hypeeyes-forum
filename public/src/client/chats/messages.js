@@ -84,11 +84,13 @@ define('forum/chats/messages', ['components', 'sounds', 'translator', 'benchpres
 
 	function onMessagesParsed(chatContentEl, html) {
 		var newMessage = $(html);
-
+		var isAtBottom = messages.isAtBottom(chatContentEl);
 		newMessage.appendTo(chatContentEl);
 		newMessage.find('.timeago').timeago();
 		newMessage.find('img:not(.not-responsive)').addClass('img-responsive');
-		messages.scrollToBottom(chatContentEl);
+		if (isAtBottom) {
+			messages.scrollToBottom(chatContentEl);
+		}
 
 		$(window).trigger('action:chat.received', {
 			messageEl: newMessage,
@@ -112,11 +114,29 @@ define('forum/chats/messages', ['components', 'sounds', 'translator', 'benchpres
 		}
 	};
 
+	messages.isAtBottom = function (containerEl, threshold) {
+		if (containerEl.length) {
+			var distanceToBottom = containerEl[0].scrollHeight - (
+				containerEl.outerHeight() + containerEl.scrollTop()
+			);
+			return distanceToBottom < (threshold || 100);
+		}
+	};
 
 	messages.scrollToBottom = function (containerEl) {
-		if (containerEl.length) {
+		if (containerEl && containerEl.length) {
 			containerEl.scrollTop(containerEl[0].scrollHeight - containerEl.height());
+			containerEl.parent()
+				.find('[component="chat/messages/scroll-up-alert"]')
+				.addClass('hidden');
 		}
+	};
+
+	messages.toggleScrollUpAlert = function (containerEl) {
+		var isAtBottom = messages.isAtBottom(containerEl, 300);
+		containerEl.parent()
+			.find('[component="chat/messages/scroll-up-alert"]')
+			.toggleClass('hidden', isAtBottom);
 	};
 
 	messages.prepEdit = function (inputEl, messageId, roomId) {
@@ -129,14 +149,26 @@ define('forum/chats/messages', ['components', 'sounds', 'translator', 'benchpres
 				// By setting the `data-mid` attribute, I tell the chat code that I am editing a
 				// message, instead of posting a new one.
 				inputEl.attr('data-mid', messageId).addClass('editing');
-				inputEl.val(raw);
+				inputEl.val(raw).focus();
+
+				$(window).trigger('action:chat.prepEdit', {
+					inputEl: inputEl,
+					messageId: messageId,
+					roomId: roomId,
+				});
 			}
 		});
 	};
 
-	messages.onChatMessageEdit = function () {
+	messages.addSocketListeners = function () {
 		socket.removeListener('event:chats.edit', onChatMessageEdited);
 		socket.on('event:chats.edit', onChatMessageEdited);
+
+		socket.removeListener('event:chats.delete', onChatMessageDeleted);
+		socket.on('event:chats.delete', onChatMessageDeleted);
+
+		socket.removeListener('event:chats.restore', onChatMessageRestored);
+		socket.on('event:chats.restore', onChatMessageRestored);
 	};
 
 	function onChatMessageEdited(data) {
@@ -151,6 +183,18 @@ define('forum/chats/messages', ['components', 'sounds', 'translator', 'benchpres
 				}
 			});
 		});
+	}
+
+	function onChatMessageDeleted(messageId) {
+		components.get('chat/message', messageId)
+			.toggleClass('deleted', true)
+			.find('[component="chat/message/body"]').translateHtml('[[modules:chat.message-deleted]]');
+	}
+
+	function onChatMessageRestored(message) {
+		components.get('chat/message', message.messageId)
+			.toggleClass('deleted', false)
+			.find('[component="chat/message/body"]').html(message.content);
 	}
 
 	messages.delete = function (messageId, roomId) {

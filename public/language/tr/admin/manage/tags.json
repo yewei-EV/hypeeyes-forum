@@ -3,17 +3,16 @@
 	"bg-color": "Arkaplan Rengi",
 	"text-color": "Yazı Rengi",
 	"create-modify": "Etiketleri Oluştur & Düzenle",
-	"description": "Tıklayarak ve/veya sürükleyerek etiketleri seçin, birden çok seçmek için kaydırın.",
+	"description": "Etiketleri tıklayarak veya sürükleyerek seçin, birden fazla etiket seçmek için <code>CTRL</code> tuşunu kullanabilirsiniz. ",
 	"create": "Etiket Oluştur",
 	"modify": "Etiketleri Düzenle",
 	"rename": "Etiketleri Yeniden Adlandır",
 	"delete": "Seçili Etiketleri Sil",
 	"search": "Etiketleri ara...",
-	"settings": "Etiket yönetim sayfasını ziyaret etmek için <a href=\"%1\">buraya</a> tıklayın.",
+	"settings": "Etiket Ayarları",
 	"name": "Etiket Adı",
 
-	"alerts.editing-multiple": "Birden çok etiketi düzenle",
-	"alerts.editing-x": "\"% 1\" etiketi düzenleniyor",
+	"alerts.editing": "Etiket(ler)i Düzenle",
 	"alerts.confirm-delete": "Seçilen etiketleri gerçekten silmek istiyor musunuz?",
 	"alerts.update-success": "Etiket Güncellendi!"
 }

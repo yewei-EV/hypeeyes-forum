@@ -1,5 +1,6 @@
 'use strict';
 
+const os = require('os');
 const async = require('async');
 const winston = require('winston');
 const nconf = require('nconf');
@@ -104,7 +105,7 @@ function beforeBuild(targets, callback) {
 			db.init(next);
 		},
 		function (next) {
-			meta = require('../meta');
+			meta = require('./index');
 			meta.themes.setupPaths(next);
 		},
 		function (next)	{
@@ -113,7 +114,7 @@ function beforeBuild(targets, callback) {
 		},
 	], function (err) {
 		if (err) {
-			winston.error('[build] Encountered error preparing for build', err);
+			winston.error('[build] Encountered error preparing for build\n' + err.stack);
 			return callback(err);
 		}
 
@@ -150,7 +151,14 @@ exports.build = function (targets, options, callback) {
 		targets = targets.split(',');
 	}
 
-	var parallel = !nconf.get('series') && !options.series;
+	let series = nconf.get('series') || options.series;
+	if (series === undefined) {
+		// Detect # of CPUs and select strategy as appropriate
+		winston.verbose('[build] Querying CPU core count for build strategy');
+		const cpus = os.cpus();
+		series = cpus.length < 4;
+		winston.verbose('[build] System returned ' + cpus.length + ' cores, opting for ' + (series ? 'series' : 'parallel') + ' build strategy');
+	}
 
 	targets = targets
 		// get full target name
@@ -195,14 +203,14 @@ exports.build = function (targets, options, callback) {
 				require('./minifier').maxThreads = threads - 1;
 			}
 
-			if (parallel) {
+			if (!series) {
 				winston.info('[build] Building in parallel mode');
 			} else {
 				winston.info('[build] Building in series mode');
 			}
 
 			startTime = Date.now();
-			buildTargets(targets, parallel, next);
+			buildTargets(targets, !series, next);
 		},
 		function (next) {
 			totalTime = (Date.now() - startTime) / 1000;
@@ -210,7 +218,7 @@ exports.build = function (targets, options, callback) {
 		},
 	], function (err) {
 		if (err) {
-			winston.error('[build] Encountered error during build step', err);
+			winston.error('[build] Encountered error during build step\n' + (err.stack ? err.stack : err));
 			return callback(err);
 		}
 

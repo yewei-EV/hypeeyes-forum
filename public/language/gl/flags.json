@@ -1,8 +1,7 @@
 {
 	"state": "Estado",
-	"reporter": "Reportador",
-	"reported-at": "Reportado en",
-	"description": "Descripción",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Un licorca, que non hai nada marcado para revisión.",
 	"assignee": "Encargado",
 	"update": "Actualizar",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Asignado a min",
 	"filter-cid-all": "Tódalas categorías",
 	"apply-filters": "Aplicar filtros",
+	"more-filters": "More Filters",
 
-	"quick-links": "Ligazóns rápidas",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "Usuario marcado",
 	"view-profile": "Ver perfil",
 	"start-new-chat": "Comezar novo chat",
 	"go-to-target": "Ver contido marcado",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "Ver perfil",
 	"user-edit": "Editar perfil",
@@ -39,9 +43,11 @@
 	"notes": "Notas do aviso",
 	"add-note": "Engadir nota",
 	"no-notes": "Ningunha nota foi compartida",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Nota engadida",
+	"note-deleted": "Note Deleted",
 
-	"history": "Historial de avisos",
-	"back": "Voltar á lista de avisos",
+	"history": "Account &amp; Flag History",
 	"no-history": "Non hai historial de avisos",
 
 	"state-all": "Tódolos estados",
@@ -50,7 +56,11 @@
 	"state-resolved": "Resolto",
 	"state-rejected": "Rexeitado",
 	"no-assignee": "Non asignado",
-	"note-added": "Nota engadida",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Reportar Contido Inapropiado",
 	"modal-body": "Por favor, especifique o seu motivo para marcar %1 %2 para revisión. Alternativamente, empregue un dos botóns de reporte rápido se fose pertinente.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Contido marcado para moderación",
 	"modal-submit-confirm": "Confirm Submission",
 	"modal-submit-confirm-text": "You have a custom reason specified already. Are you sure you wish to submit via quick-report?",
-	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined."
+	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

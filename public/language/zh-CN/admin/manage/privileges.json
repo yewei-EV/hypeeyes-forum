@@ -1,8 +1,9 @@
 {
 	"global": "全局",
-	"global.no-users": "没有用户专用的全局权限。",
+	"admin": "管理员",
 	"group-privileges": "群组权限",
 	"user-privileges": "用户权限",
+	"edit-privileges": "编辑权限",
 	"chat": "对话",
 	"upload-images": "上传图片",
 	"upload-files": "上传文件",
@@ -31,5 +32,21 @@
 	"downvote-posts": "踩帖",
 	"delete-topics": "删除主题",
 	"purge": "清除",
-	"moderate": "版主"
+	"moderate": "版主",
+	"admin-dashboard": "仪表盘",
+	"admin-categories": "版块",
+	"admin-privileges": "权限",
+	"admin-users": "用户",
+	"admin-settings": "设置",
+
+	"alert.confirm-moderate": "<strong>您确定要将审核权限授予此用户组吗？</strong>此用户组是公开的，任何用户都可以随意加入。",
+	"alert.confirm-save": "请验证您保存这些权限的目的",
+	"alert.saved": "权限修改已保存并应用",
+	"alert.confirm-discard": "您确定要取消权限修改吗？",
+	"alert.discarded": "权限修改已被丢弃",
+	"alert.confirm-copyToAll": "您确定要将此权限应用于<strong>所有类别</strong>吗？",
+	"alert.confirm-copyToAllGroup": "您确定要将此用户组权限应用于<strong>所有类别</strong>吗？",
+	"alert.confirm-copyToChildren": "您确定要将此权限应用于<strong>所有子类别</strong>吗？",
+	"alert.confirm-copyToChildrenGroup": "您确定要将此用户组权限应用于<strong>所有子类别</strong>吗？",
+	"alert.no-undo": "此操作无法撤消。"
 }

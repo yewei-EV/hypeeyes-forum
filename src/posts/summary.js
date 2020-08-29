@@ -20,7 +20,7 @@ module.exports = function (Posts) {
 		options.parse = options.hasOwnProperty('parse') ? options.parse : true;
 		options.extraFields = options.hasOwnProperty('extraFields') ? options.extraFields : [];
 
-		const fields = ['pid', 'tid', 'content', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes'].concat(options.extraFields);
+		const fields = ['pid', 'tid', 'content', 'uid', 'timestamp', 'deleted', 'upvotes', 'downvotes', 'replies'].concat(options.extraFields);
 
 		let posts = await Posts.getPostsFields(pids, fields);
 		posts = posts.filter(Boolean);
@@ -74,9 +74,9 @@ module.exports = function (Posts) {
 	}
 
 	async function getTopicAndCategories(tids) {
-		const topicsData = await topics.getTopicsFields(tids, ['uid', 'tid', 'title', 'cid', 'slug', 'deleted', 'postcount', 'mainPid']);
+		const topicsData = await topics.getTopicsFields(tids, ['uid', 'tid', 'title', 'cid', 'slug', 'deleted', 'postcount', 'mainPid', 'teaserPid']);
 		const cids = _.uniq(topicsData.map(topic => topic && topic.cid));
-		const categoriesData = await categories.getCategoriesFields(cids, ['cid', 'name', 'icon', 'slug', 'parentCid', 'bgColor', 'color', 'image', 'imageClass']);
+		const categoriesData = await categories.getCategoriesFields(cids, ['cid', 'name', 'icon', 'slug', 'parentCid', 'bgColor', 'color', 'backgroundImage', 'imageClass']);
 		return { topics: topicsData, categories: categoriesData };
 	}
 

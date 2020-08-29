@@ -16,11 +16,26 @@ const uidToSystemGroup = {
 	'-1': 'spiders',
 };
 
+helpers.isUsersAllowedTo = async function (privilege, uids, cid) {
+	const [hasUserPrivilege, hasGroupPrivilege] = await Promise.all([
+		groups.isMembers(uids, 'cid:' + cid + ':privileges:' + privilege),
+		groups.isMembersOfGroupList(uids, 'cid:' + cid + ':privileges:groups:' + privilege),
+	]);
+	const allowed = uids.map((uid, index) => hasUserPrivilege[index] || hasGroupPrivilege[index]);
+	const result = await plugins.fireHook('filter:privileges:isUsersAllowedTo', { allowed: allowed, privilege: privilege, uids: uids, cid: cid });
+	return result.allowed;
+};
+
 helpers.isUserAllowedTo = async function (privilege, uid, cid) {
+	let allowed;
 	if (Array.isArray(privilege) && !Array.isArray(cid)) {
-		return await isUserAllowedToPrivileges(privilege, uid, cid);
+		allowed = await isUserAllowedToPrivileges(privilege, uid, cid);
 	} else if (Array.isArray(cid) && !Array.isArray(privilege)) {
-		return await isUserAllowedToCids(privilege, uid, cid);
+		allowed = await isUserAllowedToCids(privilege, uid, cid);
+	}
+	if (allowed) {
+		const result = await plugins.fireHook('filter:privileges:isUserAllowedTo', { allowed: allowed, privilege: privilege, uid: uid, cid: cid });
+		return result.allowed;
 	}
 	throw new Error('[[error:invalid-data]]');
 };
@@ -63,14 +78,6 @@ async function checkIfAllowed(uid, userKeys, groupKeys) {
 	return userKeys.map((key, index) => hasUserPrivilege[index] || hasGroupPrivilege[index]);
 }
 
-helpers.isUsersAllowedTo = async function (privilege, uids, cid) {
-	const [hasUserPrivilege, hasGroupPrivilege] = await Promise.all([
-		groups.isMembers(uids, 'cid:' + cid + ':privileges:' + privilege),
-		groups.isMembersOfGroupList(uids, 'cid:' + cid + ':privileges:groups:' + privilege),
-	]);
-	return uids.map((uid, index) => hasUserPrivilege[index] || hasGroupPrivilege[index]);
-};
-
 async function isSystemGroupAllowedToCids(privilege, uid, cids) {
 	const groupKeys = cids.map(cid => 'cid:' + cid + ':privileges:groups:' + privilege);
 	return await groups.isMemberOfGroups(uidToSystemGroup[uid], groupKeys);
@@ -81,8 +88,7 @@ async function isSystemGroupAllowedToPrivileges(privileges, uid, cid) {
 	return await groups.isMemberOfGroups(uidToSystemGroup[uid], groupKeys);
 }
 
-helpers.getUserPrivileges = async function (cid, hookName, userPrivilegeList) {
-	const userPrivileges = await plugins.fireHook(hookName, userPrivilegeList.slice());
+helpers.getUserPrivileges = async function (cid, userPrivileges) {
 	let memberSets = await groups.getMembersOfGroups(userPrivileges.map(privilege => 'cid:' + cid + ':privileges:' + privilege));
 	memberSets = memberSets.map(function (set) {
 		return set.map(uid => parseInt(uid, 10));
@@ -101,8 +107,7 @@ helpers.getUserPrivileges = async function (cid, hookName, userPrivilegeList) {
 	return memberData;
 };
 
-helpers.getGroupPrivileges = async function (cid, hookName, groupPrivilegeList) {
-	const groupPrivileges = await plugins.fireHook(hookName, groupPrivilegeList.slice());
+helpers.getGroupPrivileges = async function (cid, groupPrivileges) {
 	const [memberSets, allGroupNames] = await Promise.all([
 		groups.getMembersOfGroups(groupPrivileges.map(privilege => 'cid:' + cid + ':privileges:' + privilege)),
 		groups.getGroups('groups:createtime', 0, -1),
@@ -146,18 +151,18 @@ function moveToFront(groupNames, groupToMove) {
 	}
 }
 
-helpers.giveOrRescind = async function (method, privileges, cids, groupNames) {
-	groupNames = Array.isArray(groupNames) ? groupNames : [groupNames];
+helpers.giveOrRescind = async function (method, privileges, cids, members) {
+	members = Array.isArray(members) ? members : [members];
 	cids = Array.isArray(cids) ? cids : [cids];
-	for (const groupName of groupNames) {
+	for (const member of members) {
 		const groupKeys = [];
 		cids.forEach((cid) => {
 			privileges.forEach((privilege) => {
-				groupKeys.push('cid:' + cid + ':privileges:groups:' + privilege);
+				groupKeys.push('cid:' + cid + ':privileges:' + privilege);
 			});
 		});
 		/* eslint-disable no-await-in-loop */
-		await method(groupKeys, groupName);
+		await method(groupKeys, member);
 	}
 };
 

@@ -17,6 +17,25 @@ app.isConnected = false;
 
 	socket = io(config.websocketAddress, ioParams);
 
+	var oEmit = socket.emit;
+	socket.emit = function (event, data, callback) {
+		if (typeof data === 'function') {
+			callback = data;
+			data = null;
+		}
+		if (typeof callback === 'function') {
+			oEmit.apply(socket, [event, data, callback]);
+			return;
+		}
+
+		return new Promise(function (resolve, reject) {
+			oEmit.apply(socket, [event, data, function (err, result) {
+				if (err) reject(err);
+				else resolve(result);
+			}]);
+		});
+	};
+
 	if (parseInt(app.user.uid, 10) >= 0) {
 		addHandlers();
 	}
@@ -90,30 +109,30 @@ app.isConnected = false;
 		var room;
 
 		switch (url_parts[0]) {
-		case 'user':
-			room = 'user/' + (ajaxify.data ? ajaxify.data.theirid : 0);
-			break;
-		case 'topic':
-			room = 'topic_' + url_parts[1];
-			break;
-		case 'category':
-			room = 'category_' + url_parts[1];
-			break;
-		case 'recent':
-			room = 'recent_topics';
-			break;
-		case 'unread':
-			room = 'unread_topics';
-			break;
-		case 'popular':
-			room = 'popular_topics';
-			break;
-		case 'admin':
-			room = 'admin';
-			break;
-		case 'categories':
-			room = 'categories';
-			break;
+			case 'user':
+				room = 'user/' + (ajaxify.data ? ajaxify.data.theirid : 0);
+				break;
+			case 'topic':
+				room = 'topic_' + url_parts[1];
+				break;
+			case 'category':
+				room = 'category_' + url_parts[1];
+				break;
+			case 'recent':
+				room = 'recent_topics';
+				break;
+			case 'unread':
+				room = 'unread_topics';
+				break;
+			case 'popular':
+				room = 'popular_topics';
+				break;
+			case 'admin':
+				room = 'admin';
+				break;
+			case 'categories':
+				room = 'categories';
+				break;
 		}
 		app.currentRoom = '';
 		app.enterRoom(room);

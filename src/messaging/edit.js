@@ -1,24 +1,29 @@
 'use strict';
 
-var meta = require('../meta');
-var user = require('../user');
+const meta = require('../meta');
+const user = require('../user');
+const plugins = require('../plugins');
 
-var sockets = require('../socket.io');
+const sockets = require('../socket.io');
 
 
 module.exports = function (Messaging) {
 	Messaging.editMessage = async (uid, mid, roomId, content) => {
+		await Messaging.checkContent(content);
 		const raw = await Messaging.getMessageField(mid, 'content');
 		if (raw === content) {
 			return;
 		}
-		if (!String(content).trim()) {
-			throw new Error('[[error:invalid-chat-message]]');
-		}
-		await Messaging.setMessageFields(mid, {
+
+		const payload = await plugins.fireHook('filter:messaging.edit', {
 			content: content,
 			edited: Date.now(),
 		});
+
+		if (!String(payload.content).trim()) {
+			throw new Error('[[error:invalid-chat-message]]');
+		}
+		await Messaging.setMessageFields(mid, payload);
 
 		// Propagate this change to users in the room
 		const [uids, messages] = await Promise.all([
@@ -57,18 +62,18 @@ module.exports = function (Messaging) {
 
 		const [isAdmin, messageData] = await Promise.all([
 			user.isAdministrator(uid),
-			Messaging.getMessageFields(messageId, ['fromuid', 'timestamp']),
+			Messaging.getMessageFields(messageId, ['fromuid', 'timestamp', 'system']),
 		]);
 
-		if (isAdmin) {
+		if (isAdmin && !messageData.system) {
 			return;
 		}
-		var chatConfigDuration = meta.config[durationConfig];
+		const chatConfigDuration = meta.config[durationConfig];
 		if (chatConfigDuration && Date.now() - messageData.timestamp > chatConfigDuration * 1000) {
 			throw new Error('[[error:chat-' + type + '-duration-expired, ' + meta.config[durationConfig] + ']]');
 		}
 
-		if (messageData.fromuid === parseInt(uid, 10)) {
+		if (messageData.fromuid === parseInt(uid, 10) && !messageData.system) {
 			return;
 		}
 

@@ -56,6 +56,7 @@ define('forum/chats', [
 		Chats.addRenameHandler(ajaxify.data.roomId, components.get('chat/controls').find('[data-action="rename"]'));
 		Chats.addLeaveHandler(ajaxify.data.roomId, components.get('chat/controls').find('[data-action="leave"]'));
 		Chats.addScrollHandler(ajaxify.data.roomId, ajaxify.data.uid, $('.chat-content'));
+		Chats.addScrollBottomHandler($('.chat-content'));
 		Chats.addCharactersLeftHandler($('[component="chat/main-wrapper"]'));
 		Chats.addIPHandler($('[component="chat/main-wrapper"]'));
 		Chats.createAutoComplete($('[component="chat/input"]'));
@@ -101,6 +102,7 @@ define('forum/chats', [
 	Chats.addScrollHandler = function (roomId, uid, el) {
 		var loading = false;
 		el.off('scroll').on('scroll', function () {
+			messages.toggleScrollUpAlert(el);
 			if (loading) {
 				return;
 			}
@@ -144,6 +146,14 @@ define('forum/chats', [
 		});
 	};
 
+	Chats.addScrollBottomHandler = function (chatContent) {
+		chatContent.parent()
+			.find('[component="chat/messages/scroll-up-alert"]')
+			.off('click').on('click', function () {
+				messages.scrollToBottom(chatContent);
+			});
+	};
+
 	Chats.addCharactersLeftHandler = function (parent) {
 		var element = parent.find('[component="chat/input"]');
 		element.on('change keyup paste', function () {
@@ -157,18 +167,18 @@ define('forum/chats', [
 			var action = this.getAttribute('data-action');
 
 			switch (action) {
-			case 'edit':
-				var inputEl = $('[data-roomid="' + roomId + '"] [component="chat/input"]');
-				messages.prepEdit(inputEl, messageId, roomId);
-				break;
+				case 'edit':
+					var inputEl = $('[data-roomid="' + roomId + '"] [component="chat/input"]');
+					messages.prepEdit(inputEl, messageId, roomId);
+					break;
 
-			case 'delete':
-				messages.delete(messageId, roomId);
-				break;
+				case 'delete':
+					messages.delete(messageId, roomId);
+					break;
 
-			case 'restore':
-				messages.restore(messageId, roomId);
-				break;
+				case 'restore':
+					messages.restore(messageId, roomId);
+					break;
 			}
 		});
 	};
@@ -194,6 +204,9 @@ define('forum/chats', [
 			if (e.target === components.get('chat/input').get(0)) {
 				// Retrieve message id from messages list
 				var message = components.get('chat/messages').find('.chat-message[data-self="1"]').last();
+				if (!message.length) {
+					return;
+				}
 				var lastMid = message.attr('data-mid');
 				var inputEl = components.get('chat/input');
 
@@ -485,7 +498,7 @@ define('forum/chats', [
 			app.updateUserStatus($('.chats-list [data-uid="' + data.uid + '"] [component="user/status"]'), data.status);
 		});
 
-		messages.onChatMessageEdit();
+		messages.addSocketListeners();
 
 		socket.on('event:chats.roomRename', function (data) {
 			var roomEl = components.get('chat/recent/room', data.roomId);

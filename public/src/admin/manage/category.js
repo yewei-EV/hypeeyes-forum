@@ -16,8 +16,8 @@ define('admin/manage/category', [
 			$this.val($this.attr('data-value'));
 		});
 
-		$('#category-selector').on('change', function () {
-			ajaxify.go('admin/manage/categories/' + $(this).val() + window.location.hash);
+		categorySelector.init($('[component="category-selector"]'), function (selectedCategory) {
+			ajaxify.go('admin/manage/categories/' + selectedCategory.cid);
 		});
 
 		function enableColorPicker(idx, inputEl) {
@@ -48,6 +48,11 @@ define('admin/manage/category', [
 		$('[data-name="bgColor"], [data-name="color"]').each(enableColorPicker);
 
 		$('#save').on('click', function () {
+			var tags = $('#tag-whitelist').val() ? $('#tag-whitelist').val().split(',') : [];
+			if (tags.length && tags.length < parseInt($('#cid-min-tags').val(), 10)) {
+				return app.alertError('[[admin/manage/categories:alert.not-enough-whitelisted-tags]]');
+			}
+
 			if (Object.keys(modified_categories).length) {
 				socket.emit('admin.categories.update', modified_categories, function (err, result) {
 					if (err) {
@@ -124,49 +129,55 @@ define('admin/manage/category', [
 		});
 
 		$('.copy-settings').on('click', function () {
-			Benchpress.parse('admin/partials/categories/copy-settings', {
-				categories: ajaxify.data.allCategories,
-			}, function (html) {
-				var selectedCid;
-				var modal = bootbox.dialog({
-					title: '[[modules:composer.select_category]]',
-					message: html,
-					buttons: {
-						save: {
-							label: '[[modules:bootbox.confirm]]',
-							className: 'btn-primary',
-							callback: function () {
-								if (!selectedCid) {
-									return;
-								}
+			socket.emit('categories.getSelectCategories', {}, function (err, allCategories) {
+				if (err) {
+					return app.alertError(err.message);
+				}
 
-								socket.emit('admin.categories.copySettingsFrom', {
-									fromCid: selectedCid,
-									toCid: ajaxify.data.category.cid,
-									copyParent: modal.find('#copyParent').prop('checked'),
-								}, function (err) {
-									if (err) {
-										return app.alertError(err.message);
+				Benchpress.parse('admin/partials/categories/copy-settings', {
+					categories: allCategories,
+				}, function (html) {
+					var selectedCid;
+					var modal = bootbox.dialog({
+						title: '[[modules:composer.select_category]]',
+						message: html,
+						buttons: {
+							save: {
+								label: '[[modules:bootbox.confirm]]',
+								className: 'btn-primary',
+								callback: function () {
+									if (!selectedCid || parseInt(selectedCid, 10) === parseInt(ajaxify.data.category.cid, 10)) {
+										return;
 									}
 
-									modal.modal('hide');
-									app.alertSuccess('[[admin/manage/categories:alert.copy-success]]');
-									ajaxify.refresh();
-								});
-								return false;
+									socket.emit('admin.categories.copySettingsFrom', {
+										fromCid: selectedCid,
+										toCid: ajaxify.data.category.cid,
+										copyParent: modal.find('#copyParent').prop('checked'),
+									}, function (err) {
+										if (err) {
+											return app.alertError(err.message);
+										}
+
+										modal.modal('hide');
+										app.alertSuccess('[[admin/manage/categories:alert.copy-success]]');
+										ajaxify.refresh();
+									});
+									return false;
+								},
 							},
 						},
-					},
+					});
+					modal.find('.modal-footer button').prop('disabled', true);
+					categorySelector.init(modal.find('[component="category-selector"]'), function (selectedCategory) {
+						selectedCid = selectedCategory && selectedCategory.cid;
+						if (selectedCid) {
+							modal.find('.modal-footer button').prop('disabled', false);
+						}
+					});
 				});
-				modal.find('.modal-footer button').prop('disabled', true);
-				categorySelector.init(modal.find('[component="category-selector"]'), function (selectedCategory) {
-					selectedCid = selectedCategory && selectedCategory.cid;
-					if (selectedCid) {
-						modal.find('.modal-footer button').prop('disabled', false);
-					}
-				});
+				return false;
 			});
-			return false;
 		});
 
 		$('.upload-button').on('click', function () {
@@ -227,6 +238,22 @@ define('admin/manage/category', [
 				$('button[data-action="setParent"]').removeClass('hide');
 			});
 		});
+		$('button[data-action="toggle"]').on('click', function () {
+			var payload = {};
+			var $this = $(this);
+			var disabled = $this.attr('data-disabled') === '1';
+			payload[ajaxify.data.category.cid] = {
+				disabled: disabled ? 0 : 1,
+			};
+			socket.emit('admin.categories.update', payload, function (err) {
+				if (err) {
+					return app.alertError(err.message);
+				}
+				$this.translateText(!disabled ? '[[admin/manage/categories:enable]]' : '[[admin/manage/categories:disable]]');
+				$this.toggleClass('btn-primary', !disabled).toggleClass('btn-danger', disabled);
+				$this.attr('data-disabled', disabled ? 0 : 1);
+			});
+		});
 	};
 
 	function modified(el) {
@@ -265,35 +292,40 @@ define('admin/manage/category', [
 	}
 
 	Category.launchParentSelector = function () {
-		var parents = [parseInt(ajaxify.data.category.cid, 10)];
-		var categories = ajaxify.data.allCategories.filter(function (category) {
-			var isChild = parents.includes(parseInt(category.parentCid, 10));
-			if (isChild) {
-				parents.push(parseInt(category.cid, 10));
+		socket.emit('categories.getSelectCategories', {}, function (err, allCategories) {
+			if (err) {
+				return app.alertError(err.message);
 			}
-			return category && !category.disabled && parseInt(category.cid, 10) !== parseInt(ajaxify.data.category.cid, 10) && !isChild;
-		});
-
-		categorySelector.modal(categories, function (parentCid) {
-			var payload = {};
-
-			payload[ajaxify.data.category.cid] = {
-				parentCid: parentCid,
-			};
-
-			socket.emit('admin.categories.update', payload, function (err) {
-				if (err) {
-					return app.alertError(err.message);
+			var parents = [parseInt(ajaxify.data.category.cid, 10)];
+			var categories = allCategories.filter(function (category) {
+				var isChild = parents.includes(parseInt(category.parentCid, 10));
+				if (isChild) {
+					parents.push(parseInt(category.cid, 10));
 				}
-				var parent = ajaxify.data.allCategories.filter(function (category) {
-					return category && parseInt(category.cid, 10) === parseInt(parentCid, 10);
-				});
-				parent = parent[0];
+				return category && !category.disabled && parseInt(category.cid, 10) !== parseInt(ajaxify.data.category.cid, 10) && !isChild;
+			});
 
-				$('button[data-action="removeParent"]').parent().removeClass('hide');
-				$('button[data-action="setParent"]').addClass('hide');
-				var buttonHtml = '<i class="fa ' + parent.icon + '"></i> ' + parent.name;
-				$('button[data-action="changeParent"]').html(buttonHtml).parent().removeClass('hide');
+			categorySelector.modal(categories, function (parentCid) {
+				var payload = {};
+
+				payload[ajaxify.data.category.cid] = {
+					parentCid: parentCid,
+				};
+
+				socket.emit('admin.categories.update', payload, function (err) {
+					if (err) {
+						return app.alertError(err.message);
+					}
+					var parent = allCategories.filter(function (category) {
+						return category && parseInt(category.cid, 10) === parseInt(parentCid, 10);
+					});
+					parent = parent[0];
+
+					$('button[data-action="removeParent"]').parent().removeClass('hide');
+					$('button[data-action="setParent"]').addClass('hide');
+					var buttonHtml = '<i class="fa ' + parent.icon + '"></i> ' + parent.name;
+					$('button[data-action="changeParent"]').html(buttonHtml).parent().removeClass('hide');
+				});
 			});
 		});
 	};

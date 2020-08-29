@@ -32,10 +32,6 @@ tagsController.getTag = async function (req, res) {
 		helpers.getCategoriesByStates(req.uid, '', states),
 	]);
 
-	if (Array.isArray(tids) && !tids.length) {
-		return res.render('tag', templateData);
-	}
-
 	templateData.categories = categoriesData.categories;
 
 	templateData.topics = await topics.getTopics(tids, req.uid);
@@ -53,6 +49,8 @@ tagsController.getTag = async function (req, res) {
 
 	const pageCount = Math.max(1, Math.ceil(topicCount / settings.topicsPerPage));
 	templateData.pagination = pagination.create(page, pageCount);
+	helpers.addLinkTags({ url: 'tags/' + tag, res: req.res, tags: templateData.pagination.rel });
+
 	templateData.rssFeedUrl = nconf.get('relative_path') + '/tags/' + tag + '.rss';
 	res.render('tag', templateData);
 };

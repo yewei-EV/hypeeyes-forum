@@ -1,5 +1,7 @@
 'use strict';
 
+const winston = require('winston');
+
 const groups = require('../../groups');
 const user = require('../../user');
 const categories = require('../../categories');
@@ -18,9 +20,14 @@ Categories.create = async function (socket, data) {
 };
 
 Categories.getAll = async function () {
+	winston.warn('[deprecated] admin.categories.getAll deprecated, data is returned in the api route');
 	const cids = await categories.getAllCidsFromSet('categories:cid');
-	const categoriesData = await categories.getCategoriesData(cids);
-	const result = await plugins.fireHook('filter:admin.categories.get', { categories: categoriesData });
+	const fields = [
+		'cid', 'name', 'icon', 'parentCid', 'disabled', 'link',
+		'color', 'bgColor', 'backgroundImage', 'imageClass',
+	];
+	const categoriesData = await categories.getCategoriesFields(cids, fields);
+	const result = await plugins.fireHook('filter:admin.categories.get', { categories: categoriesData, fields: fields });
 	return categories.getTree(result.categories, 0);
 };
 
@@ -61,11 +68,9 @@ Categories.setPrivilege = async function (socket, data) {
 		throw new Error('[[error:no-user-or-group]]');
 	}
 
-	if (Array.isArray(data.privilege)) {
-		await Promise.all(data.privilege.map(privilege => groups[data.set ? 'join' : 'leave']('cid:' + data.cid + ':privileges:' + privilege, data.member)));
-	} else {
-		await groups[data.set ? 'join' : 'leave']('cid:' + data.cid + ':privileges:' + data.privilege, data.member);
-	}
+	await privileges.categories[data.set ? 'give' : 'rescind'](
+		Array.isArray(data.privilege) ? data.privilege : [data.privilege], data.cid, data.member
+	);
 
 	await events.log({
 		uid: socket.uid,
@@ -79,7 +84,9 @@ Categories.setPrivilege = async function (socket, data) {
 };
 
 Categories.getPrivilegeSettings = async function (socket, cid) {
-	if (!parseInt(cid, 10)) {
+	if (cid === 'admin') {
+		return await privileges.admin.list(socket.uid);
+	} else if (!parseInt(cid, 10)) {
 		return await privileges.global.list();
 	}
 	return await privileges.categories.list(cid);

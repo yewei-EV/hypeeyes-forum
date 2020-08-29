@@ -48,9 +48,9 @@ module.exports.app = app;
 
 server.on('error', function (err) {
 	if (err.code === 'EADDRINUSE') {
-		winston.error('NodeBB address in use, exiting...', err);
+		winston.error('NodeBB address in use, exiting...', err.stack);
 	} else {
-		winston.error(err);
+		winston.error(err.stack);
 	}
 
 	throw err;
@@ -145,7 +145,7 @@ function setupExpressApp(app) {
 
 	configureBodyParser(app);
 
-	app.use(cookieParser());
+	app.use(cookieParser(nconf.get('secret')));
 	const userAgentMiddleware = useragent.express();
 	app.use(function userAgent(req, res, next) {
 		userAgentMiddleware(req, res, next);
@@ -164,15 +164,7 @@ function setupExpressApp(app) {
 		saveUninitialized: nconf.get('sessionSaveUninitialized') || false,
 	}));
 
-	app.use(helmet());
-	app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
-	if (meta.config['hsts-enabled']) {
-		app.use(helmet.hsts({
-			maxAge: meta.config['hsts-maxage'],
-			includeSubDomains: !!meta.config['hsts-subdomains'],
-			preload: !!meta.config['hsts-preload'],
-		}));
-	}
+	setupHelmet(app);
 
 	app.use(middleware.addHeaders);
 	app.use(middleware.processRender);
@@ -183,6 +175,27 @@ function setupExpressApp(app) {
 	toobusy.maxLag(meta.config.eventLoopLagThreshold);
 	toobusy.interval(meta.config.eventLoopInterval);
 }
+
+function setupHelmet(app) {
+	app.use(helmet.dnsPrefetchControl());
+	app.use(helmet.expectCt());
+	app.use(helmet.frameguard());
+	app.use(helmet.hidePoweredBy());
+	app.use(helmet.ieNoOpen());
+	app.use(helmet.noSniff());
+	app.use(helmet.permittedCrossDomainPolicies());
+	app.use(helmet.xssFilter());
+
+	app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
+	if (meta.config['hsts-enabled']) {
+		app.use(helmet.hsts({
+			maxAge: meta.config['hsts-maxage'],
+			includeSubDomains: !!meta.config['hsts-subdomains'],
+			preload: !!meta.config['hsts-preload'],
+		}));
+	}
+}
+
 
 function setupFavicon(app) {
 	var faviconPath = meta.config['brand:favicon'] || 'favicon.ico';
@@ -204,24 +217,9 @@ function configureBodyParser(app) {
 }
 
 function setupCookie() {
-	var ttl = meta.getSessionTTLSeconds() * 1000;
-
-	var cookie = {
-		maxAge: ttl,
-	};
-
-	if (nconf.get('cookieDomain') || meta.config.cookieDomain) {
-		cookie.domain = nconf.get('cookieDomain') || meta.config.cookieDomain;
-	}
-
-	if (nconf.get('secure')) {
-		cookie.secure = true;
-	}
-
-	var relativePath = nconf.get('relative_path');
-	if (relativePath !== '') {
-		cookie.path = relativePath;
-	}
+	const cookie = meta.configs.cookie.get();
+	const ttl = meta.getSessionTTLSeconds() * 1000;
+	cookie.maxAge = ttl;
 
 	return cookie;
 }
@@ -278,7 +276,7 @@ function listen(callback) {
 		oldUmask = process.umask('0000');
 		module.exports.testSocket(socketPath, function (err) {
 			if (err) {
-				winston.error('[startup] NodeBB was unable to secure domain socket access (' + socketPath + ')', err);
+				winston.error('[startup] NodeBB was unable to secure domain socket access (' + socketPath + ')', err.stack);
 				throw err;
 			}
 

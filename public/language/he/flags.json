@@ -1,8 +1,7 @@
 {
 	"state": "מצב",
-	"reporter": "מדווח",
-	"reported-at": "דווח ב",
-	"description": "תאור",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "מופלטה! לא נמצאו סימונים.",
 	"assignee": "מוקצה",
 	"update": "עדכון",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "הוקצה עבורי",
 	"filter-cid-all": "כל הקטגוריות",
 	"apply-filters": "הפעל סינון",
+	"more-filters": "More Filters",
 
-	"quick-links": "קישורים מהירים",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "משתמש מסומן",
 	"view-profile": "צפה בפרופיל",
 	"start-new-chat": "התחל שיחה חדשה",
 	"go-to-target": "צפה במטרת הסימון",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "צפה בפרופיל",
 	"user-edit": "ערוך פרופיל",
@@ -39,9 +43,11 @@
 	"notes": "הערות הסימון",
 	"add-note": "הוסף הערה",
 	"no-notes": "אין הערות",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "נוספה הערה",
+	"note-deleted": "Note Deleted",
 
-	"history": "היסטוריית הסימונים",
-	"back": "חזרה לרשימת הסימונים",
+	"history": "Account &amp; Flag History",
 	"no-history": "אין הסיטוריית סימונים",
 
 	"state-all": "כל המצבים",
@@ -50,7 +56,11 @@
 	"state-resolved": "הושלם",
 	"state-rejected": "נדחה",
 	"no-assignee": "לא הוקצה",
-	"note-added": "נוספה הערה",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "דווח על תוכן לא ראוי",
 	"modal-body": "אנא ציין את הסיבה לסימון %1 %2 לצורך בקרה. לחלופין, השתמש באחד מכפתורי הדיווח המהיר אם אפשר.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "התוכן סומן לצרכי בקרה",
 	"modal-submit-confirm": "אשר שליחה",
 	"modal-submit-confirm-text": "כבר ציינת סיבה. האם אתה בטוח שאתה רוצה לשלוח על ידי דיווח-מהיר?",
-	"modal-submit-confirm-text-help": "שליחת דיווח מהיר תבטל כל סיבה קודמת שהוגדרה."
+	"modal-submit-confirm-text-help": "שליחת דיווח מהיר תבטל כל סיבה קודמת שהוגדרה.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

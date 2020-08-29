@@ -154,7 +154,7 @@ async function getTopics(tids, data) {
 	const topicsData = await topics.getTopicsData(tids);
 	const cids = _.uniq(topicsData.map(topic => topic && topic.cid));
 	const [categories, tags] = await Promise.all([
-		getCategories(topicsData, data),
+		getCategories(cids, data),
 		getTags(tids, data),
 	]);
 
@@ -300,4 +300,4 @@ async function getSearchUids(data) {
 	return await user.getUidsByUsernames(Array.isArray(data.postedBy) ? data.postedBy : [data.postedBy]);
 }
 
-search.async = require('./promisify')(search);
+require('./promisify')(search);

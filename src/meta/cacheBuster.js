@@ -4,10 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const winston = require('winston');
-const util = require('util');
-const mkdirpAsync = util.promisify(mkdirp);
-const writeFileAsync = util.promisify(fs.writeFile);
-const readFileAsync = util.promisify(fs.readFile);
 
 const filePath = path.join(__dirname, '../../build/cache-buster');
 
@@ -19,8 +15,8 @@ function generate() {
 }
 
 exports.write = async function write() {
-	await mkdirpAsync(path.dirname(filePath));
-	await writeFileAsync(filePath, generate());
+	await mkdirp(path.dirname(filePath));
+	await fs.promises.writeFile(filePath, generate());
 };
 
 exports.read = async function read() {
@@ -28,7 +24,7 @@ exports.read = async function read() {
 		return cached;
 	}
 	try {
-		const buster = await readFileAsync(filePath, 'utf8');
+		const buster = await fs.promises.readFile(filePath, 'utf8');
 		if (!buster || buster.length !== 11) {
 			winston.warn('[cache-buster] cache buster string invalid: expected /[a-z0-9]{11}/, got `' + buster + '`');
 			return generate();

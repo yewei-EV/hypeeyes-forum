@@ -41,7 +41,7 @@ require('./blocks')(User);
 require('./uploads')(User);
 
 User.exists = async function (uid) {
-	return await db.exists('user:' + uid);
+	return await db.isSortedSetMember('users:joindate', uid);
 };
 
 User.existsBySlug = async function (userslug) {
@@ -66,15 +66,7 @@ User.getUsersFromSet = async function (set, uid, start, stop) {
 User.getUsersWithFields = async function (uids, fields, uid) {
 	let results = await plugins.fireHook('filter:users.addFields', { fields: fields });
 	results.fields = _.uniq(results.fields);
-	const [userData, isAdmin] = await Promise.all([
-		User.getUsersFields(uids, results.fields),
-		User.isAdministrator(uids),
-	]);
-	userData.forEach(function (user, index) {
-		if (user) {
-			user.administrator = isAdmin[index];
-		}
-	});
+	const userData = await User.getUsersFields(uids, results.fields);
 	results = await plugins.fireHook('filter:userlist.get', { users: userData, uid: uid });
 	return results.users;
 };
@@ -231,92 +223,75 @@ User.addInterstitials = function (callback) {
 		hook: 'filter:register.interstitial',
 		method: [
 			// GDPR information collection/processing consent + email consent
-			function (data, callback) {
-				if (!meta.config.gdpr_enabled) {
-					return setImmediate(callback, null, data);
+			async function (data) {
+				if (!meta.config.gdpr_enabled || (data.userData && data.userData.gdpr_consent)) {
+					return data;
 				}
 				if (!data.userData) {
-					return setImmediate(callback, new Error('[[error:invalid-data]]'));
+					throw new Error('[[error:invalid-data]]');
 				}
-				const add = function () {
-					data.interstitials.push({
-						template: 'partials/gdpr_consent',
-						data: {
-							digestFrequency: meta.config.dailyDigestFreq,
-							digestEnabled: meta.config.dailyDigestFreq !== 'off',
-						},
-						callback: function (userData, formData, next) {
-							if (formData.gdpr_agree_data === 'on' && formData.gdpr_agree_email === 'on') {
-								userData.gdpr_consent = true;
-							}
 
-							next(userData.gdpr_consent ? null : new Error('[[register:gdpr_consent_denied]]'));
-						},
-					});
-				};
-
-				if (!data.userData.gdpr_consent) {
-					if (data.userData.uid) {
-						db.getObjectField('user:' + data.userData.uid, 'gdpr_consent', function (err, consented) {
-							if (err) {
-								return callback(err);
-							} else if (!parseInt(consented, 10)) {
-								add();
-							}
-
-							callback(null, data);
-						});
-					} else {
-						add();
-						setImmediate(callback, null, data);
+				if (data.userData.uid) {
+					const consented = await db.getObjectField('user:' + data.userData.uid, 'gdpr_consent');
+					if (parseInt(consented, 10)) {
+						return data;
 					}
-				} else {
-					// GDPR consent signed
-					setImmediate(callback, null, data);
 				}
+
+				data.interstitials.push({
+					template: 'partials/gdpr_consent',
+					data: {
+						digestFrequency: meta.config.dailyDigestFreq,
+						digestEnabled: meta.config.dailyDigestFreq !== 'off',
+					},
+					callback: function (userData, formData, next) {
+						if (formData.gdpr_agree_data === 'on' && formData.gdpr_agree_email === 'on') {
+							userData.gdpr_consent = true;
+						}
+
+						next(userData.gdpr_consent ? null : new Error('[[register:gdpr_consent_denied]]'));
+					},
+				});
+				return data;
 			},
 
 			// Forum Terms of Use
-			function (data, callback) {
+			async function (data) {
 				if (!data.userData) {
-					return setImmediate(callback, new Error('[[error:invalid-data]]'));
+					throw new Error('[[error:invalid-data]]');
+				}
+				if (!meta.config.termsOfUse || data.userData.acceptTos) {
+					// no ToS or ToS accepted, nothing to do
+					return data;
 				}
 
-				const add = function () {
-					data.interstitials.push({
-						template: 'partials/acceptTos',
-						data: {
-							termsOfUse: meta.config.termsOfUse,
-						},
-						callback: function (userData, formData, next) {
-							if (formData['agree-terms'] === 'on') {
-								userData.acceptTos = true;
-							}
-
-							next(userData.acceptTos ? null : new Error('[[register:terms_of_use_error]]'));
-						},
-					});
-				};
-
-				if (meta.config.termsOfUse && !data.userData.acceptTos) {
-					if (data.userData.uid) {
-						db.getObjectField('user:' + data.userData.uid, 'acceptTos', function (err, accepted) {
-							if (err) {
-								return callback(err);
-							} else if (!parseInt(accepted, 10)) {
-								add();
-							}
-
-							callback(null, data);
-						});
-					} else {
-						add();
-						setImmediate(callback, null, data);
+				if (data.userData.uid) {
+					const accepted = await db.getObjectField('user:' + data.userData.uid, 'acceptTos');
+					if (parseInt(accepted, 10)) {
+						return data;
 					}
-				} else {
-					// TOS accepted
-					setImmediate(callback, null, data);
 				}
+
+				const termsOfUse = await plugins.fireHook('filter:parse.post', {
+					postData: {
+						content: meta.config.termsOfUse || '',
+					},
+				});
+
+				data.interstitials.push({
+					template: 'partials/acceptTos',
+					data: {
+						termsOfUse: termsOfUse.postData.content,
+					},
+					callback: function (userData, formData, next) {
+						if (formData['agree-terms'] === 'on') {
+							userData.acceptTos = true;
+						}
+
+						next(userData.acceptTos ? null : new Error('[[register:terms_of_use_error]]'));
+					},
+				});
+				return data;
 			},
 		],
 	});
@@ -324,4 +299,4 @@ User.addInterstitials = function (callback) {
 	callback();
 };
 
-User.async = require('../promisify')(User);
+require('../promisify')(User);

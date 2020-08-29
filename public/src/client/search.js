@@ -148,7 +148,7 @@ define('forum/search', ['search', 'autocomplete', 'storage'], function (searchMo
 
 			result.find('*').each(function () {
 				$(this).after('<!-- ' + nested.length + ' -->');
-				nested.push($('<div />').append($(this)));
+				nested.push($('<div></div>').append($(this)));
 			});
 
 			result.html(result.html().replace(regex, function (match, p1) {
@@ -188,15 +188,18 @@ define('forum/search', ['search', 'autocomplete', 'storage'], function (searchMo
 			confirmKeys: [13, 44],
 			trimValue: true,
 		});
-		autocomplete.user(userEl.siblings('.bootstrap-tagsinput').find('input'));
+		if (app.user.privileges['search:users']) {
+			autocomplete.user(userEl.siblings('.bootstrap-tagsinput').find('input'));
+		}
 
 		var tagEl = $('#has-tags');
 		tagEl.tagsinput({
 			confirmKeys: [13, 44],
 			trimValue: true,
 		});
-
-		autocomplete.tag(tagEl.siblings('.bootstrap-tagsinput').find('input'));
+		if (app.user.privileges['search:tags']) {
+			autocomplete.tag(tagEl.siblings('.bootstrap-tagsinput').find('input'));
+		}
 	}
 
 	return Search;

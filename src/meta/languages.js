@@ -1,16 +1,14 @@
 'use strict';
 
+const _ = require('lodash');
+const nconf = require('nconf');
 const path = require('path');
 const fs = require('fs');
-const mkdirp = require('mkdirp');
-const rimraf = require('rimraf');
-const _ = require('lodash');
-
 const util = require('util');
-const mkdirpAsync = util.promisify(mkdirp);
+let mkdirp = require('mkdirp');
+mkdirp = mkdirp.hasOwnProperty('native') ? mkdirp : util.promisify(mkdirp);
+const rimraf = require('rimraf');
 const rimrafAsync = util.promisify(rimraf);
-const writeFileAsync = util.promisify(fs.writeFile);
-const readFileAsync = util.promisify(fs.readFile);
 
 const file = require('../file');
 const Plugins = require('../plugins');
@@ -43,24 +41,27 @@ async function getTranslationMetadata() {
 
 	languages = _.union(languages, Plugins.languageData.languages).sort().filter(Boolean);
 	namespaces = _.union(namespaces, Plugins.languageData.namespaces).sort().filter(Boolean);
-
+	const configLangs = nconf.get('languages');
+	if (process.env.NODE_ENV === 'development' && Array.isArray(configLangs) && configLangs.length) {
+		languages = configLangs;
+	}
 	// save a list of languages to `${buildLanguagesPath}/metadata.json`
 	// avoids readdirs later on
-	await mkdirpAsync(buildLanguagesPath);
+	await mkdirp(buildLanguagesPath);
 	const result = {
 		languages: languages,
 		namespaces: namespaces,
 	};
-	await writeFileAsync(path.join(buildLanguagesPath, 'metadata.json'), JSON.stringify(result));
+	await fs.promises.writeFile(path.join(buildLanguagesPath, 'metadata.json'), JSON.stringify(result));
 	return result;
 }
 
 async function writeLanguageFile(language, namespace, translations) {
-	const dev = global.env === 'development';
+	const dev = process.env.NODE_ENV === 'development';
 	const filePath = path.join(buildLanguagesPath, language, namespace + '.json');
 
-	await mkdirpAsync(path.dirname(filePath));
-	await writeFileAsync(filePath, JSON.stringify(translations, null, dev ? 2 : 0));
+	await mkdirp(path.dirname(filePath));
+	await fs.promises.writeFile(filePath, JSON.stringify(translations, null, dev ? 2 : 0));
 }
 
 // for each language and namespace combination,
@@ -120,7 +121,7 @@ async function addPlugin(translations, pluginData, lang, namespace) {
 
 async function assignFileToTranslations(translations, path) {
 	try {
-		const fileData = await readFileAsync(path, 'utf8');
+		const fileData = await fs.promises.readFile(path, 'utf8');
 		Object.assign(translations, JSON.parse(fileData));
 	} catch (err) {
 		if (err.code !== 'ENOENT') {

@@ -1,11 +1,12 @@
 {
 	"events": "ארועים",
 	"no-events": "אין ארועים",
-	"control-panel": "בקרת ארועים",
-	"filters": "Filters",
-	"filters-apply": "Apply Filters",
-	"filter-type": "Event Type",
-	"filter-start": "Start Date",
-	"filter-end": "End Date",
-	"filter-perPage": "Per Page"
+	"control-panel": "בקרת ארועים\n ",
+	"delete-events": "Delete Events",
+	"filters": "מסננים",
+	"filters-apply": "החל מסננים",
+	"filter-type": "סוג אירוע",
+	"filter-start": "מתאריך",
+	"filter-end": "עד תאריך",
+	"filter-perPage": "פריטים בכל דף"
 }

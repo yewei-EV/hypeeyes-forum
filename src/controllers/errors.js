@@ -4,8 +4,9 @@ var nconf = require('nconf');
 var winston = require('winston');
 var validator = require('validator');
 var plugins = require('../plugins');
+var middleware = require('../middleware');
 
-exports.handleURIErrors = function handleURIErrors(err, req, res, next) {
+exports.handleURIErrors = async function handleURIErrors(err, req, res, next) {
 	// Handle cases where malformed URIs are passed in
 	if (err instanceof URIError) {
 		const cleanPath = req.path.replace(new RegExp('^' + nconf.get('relative_path')), '');
@@ -23,10 +24,8 @@ exports.handleURIErrors = function handleURIErrors(err, req, res, next) {
 					error: '[[global:400.title]]',
 				});
 			} else {
-				var middleware = require('../middleware');
-				middleware.buildHeader(req, res, function () {
-					res.status(400).render('400', { error: validator.escape(String(err.message)) });
-				});
+				await middleware.buildHeaderAsync(req, res);
+				res.status(400).render('400', { error: validator.escape(String(err.message)) });
 			}
 		}
 	} else {
@@ -46,14 +45,14 @@ exports.handleErrors = function handleErrors(err, req, res, next) { // eslint-di
 			res.status(403).type('text/plain').send(err.message);
 		},
 	};
-	var defaultHandler = function () {
+	var defaultHandler = async function () {
 		// Display NodeBB error page
 		var status = parseInt(err.status, 10);
 		if ((status === 302 || status === 308) && err.path) {
 			return res.locals.isAPI ? res.set('X-Redirect', err.path).status(200).json(err.path) : res.redirect(nconf.get('relative_path') + err.path);
 		}
 
-		winston.error(req.path + '\n', err);
+		winston.error(req.path + '\n' + err.stack);
 
 		res.status(status || 500);
 
@@ -61,10 +60,8 @@ exports.handleErrors = function handleErrors(err, req, res, next) { // eslint-di
 		if (res.locals.isAPI) {
 			res.json({ path: validator.escape(path), error: err.message });
 		} else {
-			var middleware = require('../middleware');
-			middleware.buildHeader(req, res, function () {
-				res.render('500', { path: validator.escape(path), error: validator.escape(String(err.message)) });
-			});
+			await middleware.buildHeaderAsync(req, res);
+			res.render('500', { path: validator.escape(path), error: validator.escape(String(err.message)) });
 		}
 	};
 

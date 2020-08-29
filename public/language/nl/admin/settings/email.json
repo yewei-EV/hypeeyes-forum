@@ -4,10 +4,7 @@
 	"address-help": "Het volgende e-mailadres refereert aan de e-mail die ontvanger ziet in de \"From\" en \"Reply To\" velden.",
 	"from": "From Naam",
 	"from-help": "De from naam om te tonen in de e-mail.",
-	"sendmail-rate-limit": "Send <em>X</em> emails...",
-	"sendmail-rate-delta": "... every <em>X</em> milliseconds",
-	"sendmail-rate-help": "Instructs the NodeBB mailer to limit the number of messages sent at once in order to not overwhelm email receiving services. These options do not apply if SMTP Transport is enabled (below).",
-
+	
 	"smtp-transport": "SMTP Transport",
 	"smtp-transport.enabled": "Gebruik een externe mail server om mails te verzenden",
 	"smtp-transport-help": "Je kunt een bekende dienst uit de lijst selecteren of vul een aangepaste dienst in.",
@@ -25,6 +22,8 @@
 	"smtp-transport.username": "Gebruikersnaam",
 	"smtp-transport.username-help": "<b>For the Gmail service,</b> voer het volledige email adres in, in het bijzonder als je gebruik maakt van een Google Apps managed domain.",
 	"smtp-transport.password": "Wachtwoord",
+	"smtp-transport.pool": "Enable pooled connections",
+	"smtp-transport.pool-help": "Pooling connections prevents NodeBB from creating a new connection for every email. This option only applies if SMTP Transport is enabled.",
 
 	"template": "Aanpassen E-mail Template",
 	"template.select": "Selecteer E-mail Template",
@@ -33,8 +32,8 @@
 	"testing.select": "Selecteer E-mail Template",
 	"testing.send": "Verzend Test E-mail",
 	"testing.send-help": "De test mail zal worden verstuurd naar het email adres van de op dit moment ingelogde gebruiker.",
-	"subscriptions": "Email Digests",
-	"subscriptions.disable": "Disable email digests",
+	"subscriptions": "E-mail digests",
+	"subscriptions.disable": "Schakel e-mail digests uit",
 	"subscriptions.hour": "Uur van Digest",
 	"subscriptions.hour-help": "Voer het nummer in dat het uur representeerd waarop scheduled email digests worden verstuurd (bv. <code>0</code> voor middernacht, <code>17</code> voor 17:00). Neem er s.v.p. notie van dat dit het uur is van de server self, dit hoeft niet exact overeen te komen met de klok van uw systeem.<br /> De tijd op de server is bij benadering: <span id=\"serverTime\"></span><br /> De volgende dagelijkse digest staat gepland om <span id=\"nextDigestTime\"></span>"
 }

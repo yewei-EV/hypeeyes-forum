@@ -40,10 +40,9 @@ redisModule.init = function (callback) {
 	callback = callback || function () { };
 	redisModule.client = connection.connect(nconf.get('redis'), function (err) {
 		if (err) {
-			winston.error('NodeBB could not connect to your Redis database. Redis returned the following error', err);
+			winston.error('NodeBB could not connect to your Redis database. Redis returned the following error', err.stack);
 			return callback(err);
 		}
-
 		require('./redis/promisify')(redisModule.client);
 
 		callback();
@@ -118,9 +117,10 @@ redisModule.info = function (cxn, callback) {
 
 			const keyInfo = redisData['db' + nconf.get('redis:database')];
 			if (keyInfo) {
-				redisData.keys = keyInfo.split(',')[0].replace('keys=', '');
-				redisData.expires = keyInfo.split(',')[1].replace('expires=', '');
-				redisData.avg_ttl = keyInfo.split(',')[2].replace('avg_ttl=', '');
+				const split = keyInfo.split(',');
+				redisData.keys = (split[0] || '').replace('keys=', '');
+				redisData.expires = (split[1] || '').replace('expires=', '');
+				redisData.avg_ttl = (split[2] || '').replace('avg_ttl=', '');
 			}
 
 			redisData.instantaneous_input = (redisData.instantaneous_input_kbps / 1024).toFixed(3);
@@ -156,4 +156,4 @@ require('./redis/sorted')(redisModule);
 require('./redis/list')(redisModule);
 require('./redis/transaction')(redisModule);
 
-redisModule.async = require('../promisify')(redisModule, ['client', 'sessionStore']);
+require('../promisify')(redisModule, ['client', 'sessionStore']);

@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "与<span id=\"chat-with-name\"></span>聊天",
     "chat.placeholder": "在这里输入聊天消息，按回车键发送",
+    "chat.scroll-up-alert": "您正在查看较旧的消息，点击此处转到最新消息。",
     "chat.send": "发送",
     "chat.no_active": "暂无聊天",
     "chat.user_typing": "%1 正在输入……",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "最近聊天",
     "chat.contacts": "联系人",
     "chat.message-history": "消息历史",
+    "chat.message-deleted": "消息已删除",
     "chat.options": "聊天配置",
     "chat.pop-out": "弹出聊天窗口",
     "chat.minimize": "最小化",
@@ -57,6 +59,7 @@
     "composer.upload-file": "上传文件",
     "composer.zen_mode": "无干扰模式",
     "composer.select_category": "选择一个版块",
+    "composer.textarea.placeholder": "在此处输入您的帖子内容，拖放图像",
     "bootbox.ok": "确认",
     "bootbox.cancel": "取消",
     "bootbox.confirm": "确认",

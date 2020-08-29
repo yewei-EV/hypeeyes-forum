@@ -10,11 +10,14 @@
 	"ban": "Banir Utilizador(es)",
 	"temp-ban": "Banir Utilizador(es) Temporariamente",
 	"unban": "Desbanir Utilizador(es)",
-	"reset-lockout": "Reset Lockout",
+	"reset-lockout": "Redefinir Bloqueio",
 	"reset-flags": "Redefinir Denúncias",
-	"delete": "Eliminar Utilizador(es)",
-	"purge": "Apagar Utilizador(es) e Conteúdo",
+	"delete": "Eliminar <strong>Utilizador(es)</strong>",
+	"delete-content": "Eliminar <strong>Conteúdo</strong> do(s) Utilizador(es)",
+	"purge": "Eliminar <strong>Utilizador(es)</strong> e os seus <strong>Conteúdos</strong>",
 	"download-csv": "Transferir CSV",
+	"manage-groups": "Gerir Grupos",
+	"add-group": "Adicionar Grupo",
 	"invite": "Convidar",
 	"new": "Novo Utilizador",
 
@@ -28,10 +31,10 @@
 	"pills.banned": "Banido",
 	"pills.search": "Procura de Utilizadores",
 
-	"50-per-page": "50 per page",
-	"100-per-page": "100 per page",
-	"250-per-page": "250 per page",
-	"500-per-page": "500 per page",
+	"50-per-page": "50 por página",
+	"100-per-page": "100 por página",
+	"250-per-page": "250 por página",
+	"500-per-page": "500 por página",
 
 	"search.uid": "Por ID de Utilizador",
 	"search.uid-placeholder": "Digita um ID de utilizador para procurar",
@@ -71,10 +74,10 @@
 
 	"alerts.confirm-ban": "Tens a certeza que queres banir este utilizador <strong>permanentemente</strong>?",
 	"alerts.confirm-ban-multi": "Tens a certeza que queres banir estes utilizadores <strong>permanentemente</strong>?",
-	"alerts.ban-success": "Utilizador(es) banidos!",
+	"alerts.ban-success": "Utilizador(es) banido(s)!",
 	"alerts.button-ban-x": "Banir %1 utilizador(es)",
-	"alerts.unban-success": "Utilizador(es) desbanidos!",
-	"alerts.lockout-reset-success": "Lockout(s) reset!",
+	"alerts.unban-success": "Utilizador(es) desbanido(s)!",
+	"alerts.lockout-reset-success": "Bloqueio(s) redefinido(s)!",
 	"alerts.flag-reset-success": "Denúncia(s) redefinida(s)!",
 	"alerts.no-remove-yourself-admin": "Não podes remover a ti próprio como Administrador!",
 	"alerts.make-admin-success": "O utilizador é agora um administrador.",
@@ -91,9 +94,11 @@
 	"alerts.validate-email-success": "E-mails validados",
 	"alerts.validate-force-password-reset-success": "User(s) passwords have been reset and their existing sessions have been revoked.",
 	"alerts.password-reset-confirm": "Do you want to send password reset email(s) to these user(s)?",
-	"alerts.confirm-delete": "<b>Atenção!</b><br/>Desejas mesmo eliminar este utilizador(es)?<br/>Esta ação é irreversível! Apenas a conta do utilizador será apagada, as suas publicações e os seus tópicos permaneceram.",
+	"alerts.confirm-delete": "<strong>Warning!</strong><p>Do you really want to delete <strong>user(s)</strong>?</p><p>This action is not reversible! Only the user account will be deleted, their posts and topics will remain.</p>",
 	"alerts.delete-success": "Utilizador(es) Eliminados!",
-	"alerts.confirm-purge": "<b>Atenção!</b><br/>Tens a certeza que pretendes eliminar este(s) utilizador(es) e o seu conteúdo?<br/>Esta ação não é reversível! Todos os dados dos utilizadores e o conteúdo dos mesmos será apagado!",
+	"alerts.confirm-delete-content": "<strong>Warning!</strong><p>Do you really want to delete these user(s) <strong>content</strong>?</p><p>This action is not reversible! The users' accounts will remain, but their posts and topics will be deleted.</p>",
+	"alerts.delete-content-success": "Conteúdo do(s) Utilizador(es) Eliminado!",
+	"alerts.confirm-purge": "<strong>Warning!</strong><p>Do you really want to delete <strong>user(s) and their content</strong>?</p><p>This action is not reversible! All user data and content will be erased!</p>",
 	"alerts.create": "Criar Utilizador",
 	"alerts.button-create": "Criar",
 	"alerts.button-cancel": "Cancelar",
@@ -103,5 +108,5 @@
 
 	"alerts.prompt-email": "E-mails:",
 	"alerts.email-sent-to": "Foi enviado um e-mail de convite para %1",
-	"alerts.x-users-found": "%1 utilizador(es) encontrado(s)! A procura demorou %2 ms."
+	"alerts.x-users-found": "%1 utilizador(es) encontrado(s), (%2 segundos)"
 }

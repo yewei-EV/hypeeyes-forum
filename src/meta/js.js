@@ -3,7 +3,16 @@
 var path = require('path');
 var async = require('async');
 var fs = require('fs');
+const util = require('util');
 var mkdirp = require('mkdirp');
+var mkdirpCallback;
+if (mkdirp.hasOwnProperty('native')) {
+	mkdirpCallback = util.callbackify(mkdirp);
+} else {
+	mkdirpCallback = mkdirp;
+	mkdirp = util.promisify(mkdirp);
+}
+
 var rimraf = require('rimraf');
 
 var file = require('../file');
@@ -119,7 +128,7 @@ function minifyModules(modules, fork, callback) {
 		return prev;
 	}, []);
 
-	async.each(moduleDirs, mkdirp, function (err) {
+	async.each(moduleDirs, mkdirpCallback, function (err) {
 		if (err) {
 			return callback(err);
 		}
@@ -156,7 +165,7 @@ function linkModules(callback) {
 
 		async.parallel({
 			dir: function (cb) {
-				mkdirp(path.dirname(destPath), function (err) {
+				mkdirpCallback(path.dirname(destPath), function (err) {
 					cb(err);
 				});
 			},
@@ -251,7 +260,7 @@ JS.buildModules = function (fork, callback) {
 	async.waterfall([
 		clearModules,
 		function (next) {
-			if (global.env === 'development') {
+			if (process.env.NODE_ENV === 'development') {
 				return linkModules(callback);
 			}
 
@@ -272,7 +281,7 @@ JS.linkStatics = function (callback) {
 			var sourceDir = plugins.staticDirs[mappedPath];
 			var destDir = path.join(__dirname, '../../build/public/plugins', mappedPath);
 
-			mkdirp(path.dirname(destDir), function (err) {
+			mkdirpCallback(path.dirname(destDir), function (err) {
 				if (err) {
 					return next(err);
 				}
@@ -314,7 +323,7 @@ function getBundleScriptList(target, callback) {
 
 		var scripts = JS.scripts.base;
 
-		if (target === 'client' && global.env !== 'development') {
+		if (target === 'client' && process.env.NODE_ENV !== 'development') {
 			scripts = scripts.concat(JS.scripts.rjs);
 		} else if (target === 'acp') {
 			scripts = scripts.concat(JS.scripts.admin);
@@ -343,12 +352,12 @@ JS.buildBundle = function (target, fork, callback) {
 			getBundleScriptList(target, next);
 		},
 		function (files, next) {
-			mkdirp(path.join(__dirname, '../../build/public'), function (err) {
+			mkdirpCallback(path.join(__dirname, '../../build/public'), function (err) {
 				next(err, files);
 			});
 		},
 		function (files, next) {
-			var minify = global.env !== 'development';
+			var minify = process.env.NODE_ENV !== 'development';
 			var filePath = path.join(__dirname, '../../build/public', fileNames[target]);
 
 			minifier.js.bundle({

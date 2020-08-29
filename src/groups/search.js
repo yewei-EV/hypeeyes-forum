@@ -1,7 +1,7 @@
 'use strict';
 
 const user = require('../user');
-const db = require('./../database');
+const db = require('../database');
 
 module.exports = function (Groups) {
 	Groups.search = async function (query, options) {
@@ -13,7 +13,7 @@ module.exports = function (Groups) {
 		if (!options.hideEphemeralGroups) {
 			groupNames = Groups.ephemeralGroups.concat(groupNames);
 		}
-		groupNames = groupNames.filter(name => name.toLowerCase().includes(query) && name !== 'administrators' && !Groups.isPrivilegeGroup(name));
+		groupNames = groupNames.filter(name => name.toLowerCase().includes(query) && !Groups.isPrivilegeGroup(name));
 		groupNames = groupNames.slice(0, 100);
 
 		let groupsData;
@@ -31,18 +31,18 @@ module.exports = function (Groups) {
 
 	Groups.sort = function (strategy, groups) {
 		switch (strategy) {
-		case 'count':
-			groups.sort((a, b) => a.slug > b.slug)
-				.sort((a, b) => b.memberCount - a.memberCount);
-			break;
+			case 'count':
+				groups.sort((a, b) => a.slug > b.slug)
+					.sort((a, b) => b.memberCount - a.memberCount);
+				break;
 
-		case 'date':
-			groups.sort((a, b) => b.createtime - a.createtime);
-			break;
+			case 'date':
+				groups.sort((a, b) => b.createtime - a.createtime);
+				break;
 
-		case 'alpha':	// intentional fall-through
-		default:
-			groups.sort((a, b) => (a.slug > b.slug ? 1 : -1));
+			case 'alpha':	// intentional fall-through
+			default:
+				groups.sort((a, b) => (a.slug > b.slug ? 1 : -1));
 		}
 
 		return groups;
@@ -54,16 +54,13 @@ module.exports = function (Groups) {
 			return { users: users };
 		}
 
+		const results = await user.search({
+			...data,
+			paginate: false,
+			hardCap: -1,
+		});
 
-		data.paginate = false;
-		const results = await user.search(data);
-
-		let uids = results.users.map(user => user && user.uid);
-		const isMembers = await Groups.isMembers(uids, data.groupName);
-
-		results.users = results.users.filter((user, index) => isMembers[index]);
-
-		uids = results.users.map(user => user && user.uid);
+		const uids = results.users.map(user => user && user.uid);
 		const isOwners = await Groups.ownership.isOwners(uids, data.groupName);
 
 		results.users.forEach(function (user, index) {

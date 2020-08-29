@@ -34,7 +34,11 @@ uploadsController.upload = async function (req, res, filesIterator) {
 	}
 
 	try {
-		const images = await Promise.all(files.map(fileObj => filesIterator(fileObj)));
+		const images = [];
+		for (const fileObj of files) {
+			/* eslint-disable no-await-in-loop */
+			images.push(await filesIterator(fileObj));
+		}
 		res.status(200).json(images);
 	} catch (err) {
 		res.status(500).json({ path: req.path, error: err.message });
@@ -65,6 +69,7 @@ async function uploadAsImage(req, uploadedFile) {
 		return await plugins.fireHook('filter:uploadImage', {
 			image: uploadedFile,
 			uid: req.uid,
+			folder: 'files',
 		});
 	}
 	await image.isFileTypeAllowed(uploadedFile.path);
@@ -83,10 +88,6 @@ async function uploadAsFile(req, uploadedFile) {
 	const canUpload = await privileges.global.can('upload:post:file', req.uid);
 	if (!canUpload) {
 		throw new Error('[[error:no-privileges]]');
-	}
-
-	if (!meta.config.allowFileUploads) {
-		throw new Error('[[error:uploads-are-disabled]]');
 	}
 
 	const fileObj = await uploadsController.uploadFile(req.uid, uploadedFile);
@@ -133,6 +134,7 @@ uploadsController.uploadThumb = async function (req, res, next) {
 			return await plugins.fireHook('filter:uploadImage', {
 				image: uploadedFile,
 				uid: req.uid,
+				folder: 'files',
 			});
 		}
 
@@ -145,6 +147,7 @@ uploadsController.uploadFile = async function (uid, uploadedFile, withWatermark 
 		return await plugins.fireHook('filter:uploadFile', {
 			file: uploadedFile,
 			uid: uid,
+			folder: 'files',
 		});
 	}
 
@@ -162,21 +165,20 @@ uploadsController.uploadFile = async function (uid, uploadedFile, withWatermark 
 	if (allowed.length > 0 && (!extension || extension === '.' || !allowed.includes(extension))) {
 		throw new Error('[[error:invalid-file-type, ' + allowed.join('&#44; ') + ']]');
 	}
-
-	return await saveFileToLocal(uid, uploadedFile, withWatermark);
+	return await saveFileToLocal(uid, 'files', uploadedFile, withWatermark);
 };
 
-async function saveFileToLocal(uid, uploadedFile, withWatermark = false) {
+async function saveFileToLocal(uid, folder, uploadedFile, withWatermark) {
 	const name = uploadedFile.name || 'upload';
 	const extension = path.extname(name) || '';
 
 	const filename = Date.now() + '-' + validator.escape(name.substr(0, name.length - extension.length)).substr(0, 255) + extension;
 	let userName = '';
 	if (withWatermark) {
-		userName = await user.getUsernamesByUids([uid]) || '';
+	    userName = await user.getUsernamesByUids([uid]) || '';
 	}
 
-	const upload = await file.saveFileToLocal(filename, 'files', uploadedFile.path, withWatermark, userName);
+	const upload = await file.saveFileToLocal(filename, folder, uploadedFile.path, withWatermark, userName);
 	const storedFile = {
 		url: nconf.get('relative_path') + upload.url,
 		path: upload.path,

@@ -26,6 +26,71 @@ describe('Sorted Set methods', function () {
 		], done);
 	});
 
+	describe('sortedSetScan', function () {
+		it('should find matches in sorted set containing substring', async () => {
+			await db.sortedSetAdd('scanzset', [1, 2, 3, 4, 5, 6], ['aaaa', 'bbbb', 'bbcc', 'ddd', 'dddd', 'fghbc']);
+			const data = await db.getSortedSetScan({
+				key: 'scanzset',
+				match: '*bc*',
+			});
+			assert(data.includes('bbcc'));
+			assert(data.includes('fghbc'));
+		});
+
+		it('should find matches in sorted set with scores', async () => {
+			const data = await db.getSortedSetScan({
+				key: 'scanzset',
+				match: '*bc*',
+				withScores: true,
+			});
+			data.sort((a, b) => a.score - b.score);
+			assert.deepStrictEqual(data, [{ value: 'bbcc', score: 3 }, { value: 'fghbc', score: 6 }]);
+		});
+
+		it('should find matches in sorted set with a limit', async () => {
+			await db.sortedSetAdd('scanzset2', [1, 2, 3, 4, 5, 6], ['aaab', 'bbbb', 'bbcb', 'ddb', 'dddd', 'fghbc']);
+			const data = await db.getSortedSetScan({
+				key: 'scanzset2',
+				match: '*b*',
+				limit: 2,
+			});
+			assert.equal(data.length, 2);
+		});
+
+		it('should work for special characters', async () => {
+			await db.sortedSetAdd('scanzset3', [1, 2, 3, 4, 5], ['aaab{', 'bbbb', 'bbcb{', 'ddb', 'dddd']);
+			const data = await db.getSortedSetScan({
+				key: 'scanzset3',
+				match: '*b{',
+				limit: 2,
+			});
+			assert(data.includes('aaab{'));
+			assert(data.includes('bbcb{'));
+		});
+
+		it('should find everything starting with string', async () => {
+			await db.sortedSetAdd('scanzset4', [1, 2, 3, 4, 5], ['aaab{', 'bbbb', 'bbcb', 'ddb', 'dddd']);
+			const data = await db.getSortedSetScan({
+				key: 'scanzset4',
+				match: 'b*',
+				limit: 2,
+			});
+			assert(data.includes('bbbb'));
+			assert(data.includes('bbcb'));
+		});
+
+		it('should find everything ending with string', async () => {
+			await db.sortedSetAdd('scanzset5', [1, 2, 3, 4, 5, 6], ['aaab{', 'bbbb', 'bbcb', 'ddb', 'dddd', 'adb']);
+			const data = await db.getSortedSetScan({
+				key: 'scanzset5',
+				match: '*db',
+			});
+			assert.equal(data.length, 2);
+			assert(data.includes('ddb'));
+			assert(data.includes('adb'));
+		});
+	});
+
 	describe('sortedSetAdd()', function () {
 		it('should add an element to a sorted set', function (done) {
 			db.sortedSetAdd('sorted1', 1, 'value1', function (err) {
@@ -118,6 +183,18 @@ describe('Sorted Set methods', function () {
 				done();
 			});
 		});
+
+		it('should error if scores has null', async function () {
+			let err;
+			try {
+				await db.sortedSetsAdd(['sorted1', 'sorted2'], [1, null], 'dontadd');
+			} catch (_err) {
+				err = _err;
+			}
+			assert.equal(err.message, '[[error:invalid-score, 1,]]');
+			assert.strictEqual(await db.isSortedSetMember('sorted1', 'dontadd'), false);
+			assert.strictEqual(await db.isSortedSetMember('sorted2', 'dontadd'), false);
+		});
 	});
 
 	describe('sortedSetAddMulti()', function () {
@@ -145,6 +222,21 @@ describe('Sorted Set methods', function () {
 				assert.ifError(err);
 				done();
 			});
+		});
+
+		it('should error if score is null', async function () {
+			let err;
+			try {
+				await db.sortedSetAddBulk([
+					['bulk4', 0, 'dontadd'],
+					['bulk5', null, 'dontadd'],
+				]);
+			} catch (_err) {
+				err = _err;
+			}
+			assert.equal(err.message, '[[error:invalid-score, null]]');
+			assert.strictEqual(await db.isSortedSetMember('bulk4', 'dontadd'), false);
+			assert.strictEqual(await db.isSortedSetMember('bulk5', 'dontadd'), false);
 		});
 	});
 
@@ -242,17 +334,15 @@ describe('Sorted Set methods', function () {
 		});
 
 		it('should work with big arrays (length > 100) ', async function () {
+			const keys = [];
 			for (let i = 0; i < 400; i++) {
 				/* eslint-disable no-await-in-loop */
 				const bulkAdd = [];
+				keys.push('testzset' + i);
 				for (let k = 0; k < 100; k++) {
 					bulkAdd.push(['testzset' + i, 1000000 + k + (i * 100), k + (i * 100)]);
 				}
 				await db.sortedSetAddBulk(bulkAdd);
-			}
-			const keys = [];
-			for (let i = 0; i < 400; i++) {
-				keys.push('testzset' + i);
 			}
 
 			let data = await db.getSortedSetRevRange(keys, 0, 3);
@@ -845,6 +935,13 @@ describe('Sorted Set methods', function () {
 	});
 
 	describe('getSortedSetsMembers', function () {
+		it('should return members of a sorted set', async function () {
+			const result = await db.getSortedSetMembers('sortedSetTest1');
+			result.forEach(function (element) {
+				assert(['value1', 'value2', 'value3'].includes(element));
+			});
+		});
+
 		it('should return members of multiple sorted sets', function (done) {
 			db.getSortedSetsMembers(['doesnotexist', 'sortedSetTest1'], function (err, sortedSets) {
 				assert.equal(err, null);
@@ -965,21 +1062,12 @@ describe('Sorted Set methods', function () {
 			});
 		});
 
-		it('should remove value from multiple keys', function (done) {
-			db.sortedSetAdd('multiTest3', [1, 2, 3, 4], ['one', 'two', 'three', 'four'], function (err) {
-				assert.ifError(err);
-				db.sortedSetAdd('multiTest4', [3, 4, 5, 6], ['three', 'four', 'five', 'six'], function (err) {
-					assert.ifError(err);
-					db.sortedSetRemove(['multiTest3', 'multiTest4'], 'three', function (err) {
-						assert.ifError(err);
-						db.getSortedSetsMembers(['multiTest3', 'multiTest4'], function (err, members) {
-							assert.ifError(err);
-							assert.deepEqual(members, [['one', 'two', 'four'], ['four', 'five', 'six']]);
-							done();
-						});
-					});
-				});
-			});
+		it('should remove value from multiple keys', async function () {
+			await db.sortedSetAdd('multiTest3', [1, 2, 3, 4], ['one', 'two', 'three', 'four']);
+			await db.sortedSetAdd('multiTest4', [3, 4, 5, 6], ['three', 'four', 'five', 'six']);
+			await db.sortedSetRemove(['multiTest3', 'multiTest4'], 'three');
+			assert.deepStrictEqual(await db.getSortedSetRange('multiTest3', 0, -1), ['one', 'two', 'four']);
+			assert.deepStrictEqual(await db.getSortedSetRange('multiTest4', 0, -1), ['four', 'five', 'six']);
 		});
 
 		it('should remove multiple values from multiple keys', function (done) {
@@ -1198,6 +1286,58 @@ describe('Sorted Set methods', function () {
 				assert.equal(data.length, 0);
 				done();
 			});
+		});
+
+		it('should return correct results if sorting by different zset', async function () {
+			await db.sortedSetAdd('bigzset', [1, 2, 3, 4, 5, 6], ['a', 'b', 'c', 'd', 'e', 'f']);
+			await db.sortedSetAdd('smallzset', [3, 2, 1], ['b', 'e', 'g']);
+			const data = await db.getSortedSetRevIntersect({
+				sets: ['bigzset', 'smallzset'],
+				start: 0,
+				stop: 19,
+				weights: [1, 0],
+				withScores: true,
+			});
+			assert.deepStrictEqual(data, [{ value: 'e', score: 5 }, { value: 'b', score: 2 }]);
+			const data2 = await db.getSortedSetRevIntersect({
+				sets: ['bigzset', 'smallzset'],
+				start: 0,
+				stop: 19,
+				weights: [0, 1],
+				withScores: true,
+			});
+			assert.deepStrictEqual(data2, [{ value: 'b', score: 3 }, { value: 'e', score: 2 }]);
+		});
+
+		it('should return correct results when intersecting big zsets', async function () {
+			const scores = [];
+			const values = [];
+			for (let i = 0; i < 30000; i++) {
+				scores.push((i + 1) * 1000);
+				values.push(String(i + 1));
+			}
+			await db.sortedSetAdd('verybigzset', scores, values);
+
+			scores.length = 0;
+			values.length = 0;
+			for (let i = 15000; i < 45000; i++) {
+				scores.push((i + 1) * 1000);
+				values.push(String(i + 1));
+			}
+			await db.sortedSetAdd('anotherbigzset', scores, values);
+			const data = await db.getSortedSetRevIntersect({
+				sets: ['verybigzset', 'anotherbigzset'],
+				start: 0,
+				stop: 3,
+				weights: [1, 0],
+				withScores: true,
+			});
+			assert.deepStrictEqual(data, [
+				{ value: '30000', score: 30000000 },
+				{ value: '29999', score: 29999000 },
+				{ value: '29998', score: 29998000 },
+				{ value: '29997', score: 29997000 },
+			]);
 		});
 	});
 

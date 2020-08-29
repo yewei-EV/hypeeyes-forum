@@ -11,6 +11,7 @@ var db = require('./mocks/databasemock');
 var User = require('../src/user');
 var Topics = require('../src/topics');
 var Categories = require('../src/categories');
+var Posts = require('../src/posts');
 var Password = require('../src/password');
 var groups = require('../src/groups');
 var helpers = require('./helpers');
@@ -98,6 +99,48 @@ describe('User', function () {
 				assert.equal(err.message, '[[error:password-too-long]]');
 				done();
 			});
+		});
+
+		it('should error if username is already taken or rename user', async function () {
+			let err;
+			async function tryCreate(data) {
+				try {
+					return await User.create(data);
+				} catch (_err) {
+					err = _err;
+				}
+			}
+
+			const [uid1, uid2] = await Promise.all([
+				tryCreate({ username: 'dupe1' }),
+				tryCreate({ username: 'dupe1' }),
+			]);
+			if (err) {
+				assert.strictEqual(err.message, '[[error:username-taken]]');
+			} else {
+				const userData = await User.getUsersFields([uid1, uid2], ['username']);
+				const userNames = userData.map(u => u.username);
+				// make sure only 1 dupe1 is created
+				assert.equal(userNames.filter(username => username === 'dupe1').length, 1);
+				assert.equal(userNames.filter(username => username === 'dupe1 0').length, 1);
+			}
+		});
+
+		it('should error if email is already taken', async function () {
+			let err;
+			async function tryCreate(data) {
+				try {
+					return await User.create(data);
+				} catch (_err) {
+					err = _err;
+				}
+			}
+
+			await Promise.all([
+				tryCreate({ username: 'notdupe1', email: 'dupe@dupe.com' }),
+				tryCreate({ username: 'notdupe2', email: 'dupe@dupe.com' }),
+			]);
+			assert.strictEqual(err.message, '[[error:email-taken]]');
 		});
 	});
 
@@ -279,7 +322,13 @@ describe('User', function () {
 	});
 
 	describe('.search()', function () {
-		var uid;
+		let adminUid;
+		let uid;
+		before(async () => {
+			adminUid = await User.create({ username: 'noteadmin' });
+			await groups.join('administrators', adminUid);
+		});
+
 		it('should return an object containing an array of matching users', function (done) {
 			User.search({ query: 'john' }, function (err, searchData) {
 				assert.ifError(err);
@@ -312,22 +361,36 @@ describe('User', function () {
 			});
 		});
 
-		it('should search users by ip', function (done) {
-			User.create({ username: 'ipsearch' }, function (err, uid) {
-				assert.ifError(err);
-				db.sortedSetAdd('ip:1.1.1.1:uid', [1, 1], [testUid, uid], function (err) {
-					assert.ifError(err);
-					socketUser.search({ uid: testUid }, { query: '1.1.1.1', searchBy: 'ip' }, function (err, data) {
-						assert.ifError(err);
-						assert(Array.isArray(data.users));
-						assert.equal(data.users.length, 2);
-						done();
-					});
-				});
+		it('should error for unprivileged user', function (done) {
+			socketUser.search({ uid: testUid }, { searchBy: 'ip', query: '123' }, function (err) {
+				assert.equal(err.message, '[[error:no-privileges]]');
+				done();
 			});
 		});
 
-		it('should search users by ip', function (done) {
+		it('should error for unprivileged user', function (done) {
+			socketUser.search({ uid: testUid }, { bannedOnly: true, query: '123' }, function (err) {
+				assert.equal(err.message, '[[error:no-privileges]]');
+				done();
+			});
+		});
+
+		it('should error for unprivileged user', function (done) {
+			socketUser.search({ uid: testUid }, { flaggedOnly: true, query: '123' }, function (err) {
+				assert.equal(err.message, '[[error:no-privileges]]');
+				done();
+			});
+		});
+
+		it('should search users by ip', async function () {
+			const uid = await User.create({ username: 'ipsearch' });
+			await db.sortedSetAdd('ip:1.1.1.1:uid', [1, 1], [testUid, uid]);
+			const data = await socketUser.search({ uid: adminUid }, { query: '1.1.1.1', searchBy: 'ip' });
+			assert(Array.isArray(data.users));
+			assert.equal(data.users.length, 2);
+		});
+
+		it('should search users by uid', function (done) {
 			socketUser.search({ uid: testUid }, { query: uid, searchBy: 'uid' }, function (err, data) {
 				assert.ifError(err);
 				assert(Array.isArray(data.users));
@@ -349,7 +412,7 @@ describe('User', function () {
 				assert.ifError(err);
 				User.setUserFields(uid, { banned: 1, flags: 10 }, function (err) {
 					assert.ifError(err);
-					socketUser.search({ uid: testUid }, {
+					socketUser.search({ uid: adminUid }, {
 						query: 'ipsearch',
 						onlineOnly: true,
 						bannedOnly: true,
@@ -411,6 +474,40 @@ describe('User', function () {
 					done();
 				});
 			});
+		});
+
+		it('should not re-add user to users:postcount if post is deleted after user deletion', async function () {
+			const uid = await User.create({ username: 'olduserwithposts' });
+			assert(await db.isSortedSetMember('users:postcount', uid));
+
+			const result = await Topics.post({
+				uid: uid,
+				title: 'old user topic',
+				content: 'old user topic post content',
+				cid: testCid,
+			});
+			assert.equal(await db.sortedSetScore('users:postcount', uid), 1);
+			await User.deleteAccount(uid);
+			assert(!await db.isSortedSetMember('users:postcount', uid));
+			await Posts.purge(result.postData.pid, 1);
+			assert(!await db.isSortedSetMember('users:postcount', uid));
+		});
+
+		it('should not re-add user to users:reputation if post is upvoted after user deletion', async function () {
+			const uid = await User.create({ username: 'olduserwithpostsupvote' });
+			assert(await db.isSortedSetMember('users:reputation', uid));
+
+			const result = await Topics.post({
+				uid: uid,
+				title: 'old user topic',
+				content: 'old user topic post content',
+				cid: testCid,
+			});
+			assert.equal(await db.sortedSetScore('users:reputation', uid), 0);
+			await User.deleteAccount(uid);
+			assert(!await db.isSortedSetMember('users:reputation', uid));
+			await Posts.upvote(result.postData.pid, 1);
+			assert(!await db.isSortedSetMember('users:reputation', uid));
 		});
 	});
 
@@ -727,6 +824,55 @@ describe('User', function () {
 			});
 		});
 
+		it('should not let user change another user\'s password', async function () {
+			const regularUserUid = await User.create({ username: 'regularuserpwdchange', password: 'regularuser1234' });
+			const uid = await User.create({ username: 'changeadminpwd1', password: '123456' });
+			let err;
+			try {
+				await socketUser.changePassword({ uid: uid }, { uid: regularUserUid, newPassword: '654321', currentPassword: '123456' });
+			} catch (_err) {
+				err = _err;
+			}
+			assert.equal(err.message, '[[user:change_password_error_privileges]]');
+		});
+
+		it('should not let user change admin\'s password', async function () {
+			const adminUid = await User.create({ username: 'adminpwdchange', password: 'admin1234' });
+			await groups.join('administrators', adminUid);
+			const uid = await User.create({ username: 'changeadminpwd2', password: '123456' });
+
+			let err;
+			try {
+				await socketUser.changePassword({ uid: uid }, { uid: adminUid, newPassword: '654321', currentPassword: '123456' });
+			} catch (_err) {
+				err = _err;
+			}
+			assert.equal(err.message, '[[user:change_password_error_privileges]]');
+		});
+
+		it('should let admin change another users password', async function () {
+			const adminUid = await User.create({ username: 'adminpwdchange2', password: 'admin1234' });
+			await groups.join('administrators', adminUid);
+			const uid = await User.create({ username: 'forgotmypassword', password: '123456' });
+
+			await socketUser.changePassword({ uid: adminUid }, { uid: uid, newPassword: '654321' });
+			const correct = await User.isPasswordCorrect(uid, '654321', '127.0.0.1');
+			assert(correct);
+		});
+
+		it('should not let admin change their password if current password is incorrect', async function () {
+			const adminUid = await User.create({ username: 'adminforgotpwd', password: 'admin1234' });
+			await groups.join('administrators', adminUid);
+
+			let err;
+			try {
+				await socketUser.changePassword({ uid: adminUid }, { uid: adminUid, newPassword: '654321', currentPassword: 'wrongpwd' });
+			} catch (_err) {
+				err = _err;
+			}
+			assert.equal(err.message, '[[user:change_password_error_wrong_current]]');
+		});
+
 		it('should change username', function (done) {
 			socketUser.changeUsernameEmail({ uid: uid }, { uid: uid, username: 'updatedAgain', password: '123456' }, function (err) {
 				assert.ifError(err);
@@ -867,31 +1013,6 @@ describe('User', function () {
 			});
 		});
 
-		it('should upload profile picture', function (done) {
-			helpers.copyFile(
-				path.join(nconf.get('base_dir'), 'test/files/test.png'),
-				path.join(nconf.get('base_dir'), 'test/files/test_copy.png'),
-				function (err) {
-					assert.ifError(err);
-					var picture = {
-						path: path.join(nconf.get('base_dir'), 'test/files/test_copy.png'),
-						size: 7189,
-						name: 'test_copy.png',
-						type: 'image/png',
-					};
-					User.uploadCroppedPicture({
-						uid: uid,
-						file: picture,
-					}, function (err, uploadedPicture) {
-						assert.ifError(err);
-						assert.equal(uploadedPicture.url, '/assets/uploads/profile/' + uid + '-profileavatar.png');
-						assert.equal(uploadedPicture.path, path.join(nconf.get('upload_path'), 'profile', uid + '-profileavatar.png'));
-						done();
-					});
-				}
-			);
-		});
-
 		it('should return error if profile image uploads disabled', function (done) {
 			meta.config.allowProfileImageUploads = 0;
 			var picture = {
@@ -905,37 +1026,15 @@ describe('User', function () {
 				file: picture,
 			}, function (err) {
 				assert.equal(err.message, '[[error:profile-image-uploads-disabled]]');
-				done();
-			});
-		});
-
-		it('should return error if profile image is too big', function (done) {
-			meta.config.allowProfileImageUploads = 1;
-			var picture = {
-				path: path.join(nconf.get('base_dir'), 'test/files/test_copy.png'),
-				size: 265000,
-				name: 'test.png',
-				type: 'image/png',
-			};
-
-			User.uploadCroppedPicture({
-				uid: uid,
-				file: picture,
-			}, function (err) {
-				assert.equal(err.message, '[[error:file-too-big, 256]]');
+				meta.config.allowProfileImageUploads = 1;
 				done();
 			});
 		});
 
 		it('should return error if profile image has no mime type', function (done) {
-			var picture = {
-				path: path.join(nconf.get('base_dir'), 'test/files/test_copy.png'),
-				size: 7189,
-				name: 'test',
-			};
 			User.uploadCroppedPicture({
 				uid: uid,
-				file: picture,
+				imageData: 'data:image/invalid;base64,R0lGODlhPQBEAPeoAJosM/',
 			}, function (err) {
 				assert.equal(err.message, '[[error:invalid-image]]');
 				done();
@@ -1102,17 +1201,12 @@ describe('User', function () {
 		});
 
 
-		it('should get history from set', function (done) {
-			var now = Date.now();
-			db.sortedSetAdd('user:' + testUid + ':usernames', now, 'derp:' + now, function (err) {
-				assert.ifError(err);
-				User.getHistory('user:' + testUid + ':usernames', function (err, data) {
-					assert.ifError(err);
-					assert.equal(data[0].value, 'derp');
-					assert.equal(data[0].timestamp, now);
-					done();
-				});
-			});
+		it('should get history from set', async function () {
+			const now = Date.now();
+			await db.sortedSetAdd('user:' + testUid + ':usernames', now, 'derp:' + now);
+			const data = await User.getHistory('user:' + testUid + ':usernames');
+			assert.equal(data[0].value, 'derp');
+			assert.equal(data[0].timestamp, now);
 		});
 
 		it('should return the correct ban reason', function (done) {
@@ -1446,6 +1540,18 @@ describe('User', function () {
 			});
 		});
 
+		it('should fail to delete user if account deletion is not allowed', async function () {
+			const oldValue = meta.config.allowAccountDeletion;
+			meta.config.allowAccountDeletion = 0;
+			const uid = await User.create({ username: 'tobedeleted' });
+			try {
+				await socketUser.deleteAccount({ uid: uid }, {});
+			} catch (err) {
+				assert.equal(err.message, '[[error:no-privileges]]');
+			}
+			meta.config.allowAccountDeletion = oldValue;
+		});
+
 		it('should fail if data is invalid', function (done) {
 			socketUser.emailExists({ uid: testUid }, null, function (err) {
 				assert.equal(err.message, '[[error:invalid-data]]');
@@ -1519,7 +1625,7 @@ describe('User', function () {
 
 		it('should save user settings', function (done) {
 			var data = {
-				uid: 1,
+				uid: testUid,
 				settings: {
 					bootswatchSkin: 'default',
 					homePageRoute: 'none',
@@ -1547,6 +1653,21 @@ describe('User', function () {
 					assert.equal(data.usePagination, true);
 					done();
 				});
+			});
+		});
+
+		it('should error if language is invalid', function (done) {
+			var data = {
+				uid: testUid,
+				settings: {
+					userLang: '<invalid-string>',
+					topicsPerPage: '10',
+					postsPerPage: '5',
+				},
+			};
+			socketUser.saveSettings({ uid: testUid }, data, function (err) {
+				assert.equal(err.message, '[[error:invalid-language]]');
+				done();
 			});
 		});
 
@@ -1681,6 +1802,23 @@ describe('User', function () {
 							done();
 						});
 					});
+				});
+			});
+		});
+
+		it('should trim username and add user to registration queue', function (done) {
+			helpers.registerUser({
+				username: 'invalidname\r\n',
+				password: '123456',
+				'password-confirm': '123456',
+				email: 'invalidtest@test.com',
+				gdpr_consent: true,
+			}, function (err) {
+				assert.ifError(err);
+				db.getSortedSetRange('registration:queue', 0, -1, function (err, data) {
+					assert.ifError(err);
+					assert.equal(data[0], 'invalidname');
+					done();
 				});
 			});
 		});
@@ -2149,10 +2287,20 @@ describe('User', function () {
 		});
 	});
 
-	it('should return offline if user is guest', function (done) {
-		var status = User.getStatus({ uid: 0 });
-		assert.strictEqual(status, 'offline');
-		done();
+	describe('status/online', function () {
+		it('should return offline if user is guest', function (done) {
+			var status = User.getStatus({ uid: 0 });
+			assert.strictEqual(status, 'offline');
+			done();
+		});
+
+		it('should return offline if user is guest', async function () {
+			assert.strictEqual(await User.isOnline(0), false);
+		});
+
+		it('should return true', async function () {
+			assert.strictEqual(await User.isOnline(testUid), true);
+		});
 	});
 
 	describe('isPrivilegedOrSelf', function () {
@@ -2189,6 +2337,19 @@ describe('User', function () {
 			assert.ifError(err);
 			assert(Array.isArray(data));
 			done();
+		});
+	});
+
+	it('should allow user to login even if password is weak', function (done) {
+		User.create({ username: 'weakpwd', password: '123456' }, function (err) {
+			assert.ifError(err);
+			const oldValue = meta.config.minimumPasswordStrength;
+			meta.config.minimumPasswordStrength = 3;
+			helpers.loginUser('weakpwd', '123456', function (err, jar, csrfs_token) {
+				assert.ifError(err);
+				meta.config.minimumPasswordStrength = oldValue;
+				done();
+			});
 		});
 	});
 });

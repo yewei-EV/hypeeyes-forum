@@ -9,10 +9,6 @@ const htmlToText = require('html-to-text');
 const url = require('url');
 const path = require('path');
 const fs = require('fs');
-const util = require('util');
-const readFileAsync = util.promisify(fs.readFile);
-const writeFileAsync = util.promisify(fs.writeFile);
-
 const _ = require('lodash');
 const jwt = require('jsonwebtoken');
 
@@ -29,9 +25,6 @@ Emailer.transports = {
 	sendmail: nodemailer.createTransport({
 		sendmail: true,
 		newline: 'unix',
-		pool: true,
-		rateLimit: meta.config['email:sendmail:rateLimit'],
-		rateDelta: meta.config['email:sendmail:rateDelta'],
 	}),
 	smtp: undefined,
 };
@@ -47,7 +40,7 @@ Emailer.getTemplates = async function (config) {
 
 	const templates = await Promise.all(emails.map(async (email) => {
 		const path = email.replace(emailsPath, '').substr(1).replace('.tpl', '');
-		const original = await readFileAsync(email, 'utf8');
+		const original = await fs.promises.readFile(email, 'utf8');
 
 		return {
 			path: path,
@@ -70,7 +63,9 @@ Emailer.setupFallbackTransport = function (config) {
 	winston.verbose('[emailer] Setting up SMTP fallback transport');
 	// Enable Gmail transport if enabled in ACP
 	if (parseInt(config['email:smtpTransport:enabled'], 10) === 1) {
-		var smtpOptions = {};
+		var smtpOptions = {
+			pool: config['email:smtpTransport:pool'],
+		};
 
 		if (config['email:smtpTransport:user'] || config['email:smtpTransport:pass']) {
 			smtpOptions.auth = {
@@ -193,7 +188,7 @@ Emailer.send = async function (template, uid, params) {
 	try {
 		await Emailer.sendToEmail(template, userData.email, userSettings.userLang, params);
 	} catch (err) {
-		winston.error(err);
+		winston.error(err.stack);
 	}
 };
 
@@ -286,7 +281,7 @@ Emailer.sendViaFallback = function (data, callback) {
 	winston.verbose('[emailer] Sending email to uid ' + data.uid + ' (' + data.to + ')');
 	Emailer.fallbackTransport.sendMail(data, function (err) {
 		if (err) {
-			winston.error(err);
+			winston.error(err.stack);
 		}
 		callback();
 	});
@@ -316,13 +311,13 @@ async function buildCustomTemplates(config) {
 			const compiled = await Benchpress.precompile(source, {
 				minify: global.env !== 'development',
 			});
-			await writeFileAsync(template.fullpath.replace(/\.tpl$/, '.js'), compiled);
+			await fs.promises.writeFile(template.fullpath.replace(/\.tpl$/, '.js'), compiled);
 		}));
 
 		Benchpress.flush();
 		winston.verbose('[emailer] Built custom email templates');
 	} catch (err) {
-		winston.error('[emailer] Failed to build custom email templates', err);
+		winston.error('[emailer] Failed to build custom email templates', err.stack);
 	}
 }
 

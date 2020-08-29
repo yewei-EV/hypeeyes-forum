@@ -1,8 +1,7 @@
 {
 	"state": "Stav",
-	"reporter": "Nahlásil",
-	"reported-at": "Nahlásil v",
-	"description": "Popis",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Hurá, žádné označení.",
 	"assignee": "Nabyvatel",
 	"update": "Aktualizovat",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Přiřazeno mě",
 	"filter-cid-all": "Všechny kategorie",
 	"apply-filters": "Použít filtry",
+	"more-filters": "More Filters",
 
-	"quick-links": "Rychlé odkazy",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "Označený uživatel",
 	"view-profile": "Zobrazit profil",
 	"start-new-chat": "Začít novou konverzaci",
 	"go-to-target": "Zobrazit cílové označení",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "Zobrazit profil",
 	"user-edit": "Upravit profil",
@@ -39,9 +43,11 @@
 	"notes": "Poznámky označení",
 	"add-note": "Přidat poznámku",
 	"no-notes": "Žádné sdílené poznámky.",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Poznámka přidána",
+	"note-deleted": "Note Deleted",
 
-	"history": "Historie označení",
-	"back": "Zpět k seznamu označení",
+	"history": "Account &amp; Flag History",
 	"no-history": "Žádná historie označení.",
 
 	"state-all": "Všechny stavy",
@@ -50,7 +56,11 @@
 	"state-resolved": "Vyřešeno",
 	"state-rejected": "Zamítnuto",
 	"no-assignee": "Nepřiřazeno",
-	"note-added": "Poznámka přidána",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Nahlásit nevhodný obsah",
 	"modal-body": "Zadejte váš důvod k označení %1 %2 pro kontrolu. Nebo použijte tlačítko je-li dostupné.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Obsah byl označen pro moderaci.",
 	"modal-submit-confirm": "Potvrdit hlášení",
 	"modal-submit-confirm-text": "Již jste zadal/a nějaký důvod. Jste si jist/a, že chcete nahlásit pomocí rychlé zprávy?",
-	"modal-submit-confirm-text-help": "Zaslání rychlé zprávy přepíše jiné zadané důvody."
+	"modal-submit-confirm-text-help": "Zaslání rychlé zprávy přepíše jiné zadané důvody.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

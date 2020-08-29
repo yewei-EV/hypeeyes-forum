@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Messaggia con",
     "chat.placeholder": "Inserisci qui il messaggio, premi invio per mandarlo",
+    "chat.scroll-up-alert": "Stai guardando i messaggi più vecchi, clicca qui per andare al messaggio più recente.",
     "chat.send": "Invia",
     "chat.no_active": "Non hai chat attive.",
     "chat.user_typing": "%1 sta scrivendo...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Chat Recenti",
     "chat.contacts": "Contatti",
     "chat.message-history": "Cronologia Messaggi",
+    "chat.message-deleted": "Messaggio cancellato",
     "chat.options": "Opzioni chat",
     "chat.pop-out": "Chat in finestra",
     "chat.minimize": "Minimizza",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Carica file",
     "composer.zen_mode": "Zen Mode",
     "composer.select_category": "Seleziona una categoria",
+    "composer.textarea.placeholder": "Inserisci qui il contenuto del tuo post, trascina e rilascia le immagini",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Annulla",
     "bootbox.confirm": "Conferma",

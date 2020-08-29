@@ -11,8 +11,6 @@ const util = require('util');
 const user = require('../user');
 const posts = require('../posts');
 
-const readdirAsync = util.promisify(fs.readdir);
-
 var app;
 var middleware;
 
@@ -43,28 +41,6 @@ Plugins.languageData = {};
 Plugins.loadedPlugins = [];
 
 Plugins.initialized = false;
-
-var defaultRequire = module.require;
-
-module.require = function (p) {
-	try {
-		return defaultRequire.apply(module, arguments);
-	} catch (err) {
-		// if we can't find the module try in parent directory
-		// since plugins.js moved into plugins folder
-		if (err.code === 'MODULE_NOT_FOUND') {
-			let stackLine = err.stack.split('\n');
-			stackLine = stackLine.find(line => line.includes('nodebb-plugin') || line.includes('nodebb-theme'));
-			var deprecatedPath = err.message.replace('Cannot find module ', '');
-			winston.warn('[deprecated] requiring core modules with `module.parent.require(' + deprecatedPath + ')` is deprecated. Please use `require.main.require("./src/<module_name>")` instead.\n' + stackLine);
-			if (path.isAbsolute(p)) {
-				throw err;
-			}
-			return defaultRequire.apply(module, [path.join('../', p)]);
-		}
-		throw err;
-	}
-};
 
 Plugins.requireLibrary = function (pluginID, libraryPath) {
 	Plugins.libraries[pluginID] = require(libraryPath);
@@ -116,7 +92,7 @@ Plugins.reload = async function () {
 	}
 
 	// If some plugins are incompatible, throw the warning here
-	if (Plugins.versionWarning.length && nconf.get('isPrimary') === 'true') {
+	if (Plugins.versionWarning.length && nconf.get('isPrimary')) {
 		console.log('');
 		winston.warn('[plugins/load] The following plugins may not be compatible with your version of NodeBB. This may cause unintended behaviour or crashing. In the event of an unresponsive NodeBB caused by this plugin, run `./nodebb reset -p PLUGINNAME` to disable it.');
 		for (var x = 0, numPlugins = Plugins.versionWarning.length; x < numPlugins; x += 1) {
@@ -170,10 +146,13 @@ function request(url, callback) {
 	require('request')(url, {
 		json: true,
 	}, function (err, res, body) {
-		if (res.statusCode === 404 || !body) {
-			return callback(err, {});
+		if (err) {
+			return callback(err);
 		}
-		callback(err, body);
+		if (res.statusCode === 404 || !body) {
+			return callback(null, {});
+		}
+		callback(null, body);
 	});
 }
 const requestAsync = util.promisify(request);
@@ -272,7 +251,7 @@ Plugins.normalise = async function (apiReturn) {
 Plugins.nodeModulesPath = path.join(__dirname, '../../node_modules');
 
 Plugins.showInstalled = async function () {
-	const dirs = await readdirAsync(Plugins.nodeModulesPath);
+	const dirs = await fs.promises.readdir(Plugins.nodeModulesPath);
 
 	let pluginPaths = await findNodeBBModules(dirs);
 	pluginPaths = pluginPaths.map(dir => path.join(Plugins.nodeModulesPath, dir));
@@ -288,7 +267,7 @@ Plugins.showInstalled = async function () {
 			pluginData.error = false;
 			return pluginData;
 		} catch (err) {
-			winston.error(err);
+			winston.error(err.stack);
 		}
 	}
 	const plugins = await Promise.all(pluginPaths.map(file => load(file)));
@@ -348,4 +327,4 @@ async function findNodeBBModules(dirs) {
 	return pluginPaths;
 }
 
-Plugins.async = require('../promisify')(Plugins);
+require('../promisify')(Plugins);

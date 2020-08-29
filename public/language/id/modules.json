@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Berbincang dengan",
     "chat.placeholder": "Tulis pesan percakapan di sini, tekan enter untuk mengirim",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Kirim",
     "chat.no_active": "Kamu tidak memiliki percakapan yang aktif.",
     "chat.user_typing": "%1 sedang menulis ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Percakapan terbaru",
     "chat.contacts": "Kontak",
     "chat.message-history": "Riwayat Pesan",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Munculkan pesan",
     "chat.minimize": "Minimize",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Upload File",
     "composer.zen_mode": "Zen Mode",
     "composer.select_category": "Select a category",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Cancel",
     "bootbox.confirm": "Confirm",

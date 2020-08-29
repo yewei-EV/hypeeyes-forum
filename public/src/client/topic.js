@@ -21,13 +21,12 @@ define('forum/topic', [
 			clearTimeout(Topic.replaceURLTimeout);
 			Topic.replaceURLTimeout = 0;
 		}
+		events.removeListeners();
 
 		if (!String(data.url).startsWith('topic/')) {
 			navigator.disable();
 			components.get('navbar/title').find('span').text('').hide();
 			app.removeAlert('bookmark');
-
-			events.removeListeners();
 
 			require(['search'], function (search) {
 				if (search.topicDOM.active) {
@@ -39,7 +38,7 @@ define('forum/topic', [
 
 	Topic.init = function () {
 		var tid = ajaxify.data.tid;
-
+		currentUrl = ajaxify.currentPage;
 		$(window).trigger('action:topic.loading');
 
 		app.enterRoom('topic_' + tid);
@@ -87,7 +86,7 @@ define('forum/topic', [
 
 		if (config.topicSearchEnabled) {
 			require(['mousetrap'], function (mousetrap) {
-				mousetrap.bind('ctrl+f', function (e) {
+				mousetrap.bind(['command+f', 'ctrl+f'], function (e) {
 					var match = ajaxify.currentPage.match(/^topic\/([\d]+)/);
 					var tid;
 					if (match) {
@@ -116,7 +115,12 @@ define('forum/topic', [
 	};
 
 	function handleBookmark(tid) {
-		// use the user's bookmark data if available, fallback to local if available
+		if (window.location.hash) {
+			var el = $(utils.escapeHTML(window.location.hash));
+			if (el.length) {
+				return navigator.scrollToElement(el, true, 0);
+			}
+		}
 		var bookmark = ajaxify.data.bookmark || storage.getItem('topic:' + tid + ':bookmark');
 		var postIndex = ajaxify.data.postIndex;
 
@@ -131,7 +135,7 @@ define('forum/topic', [
 				timeout: 0,
 				type: 'info',
 				clickfn: function () {
-					navigator.scrollToIndex(parseInt(bookmark - 1, 10), true);
+					navigator.scrollToIndex(parseInt(bookmark, 10), true);
 				},
 				closefn: function () {
 					storage.removeItem('topic:' + tid + ':bookmark');
@@ -241,6 +245,9 @@ define('forum/topic', [
 	function updateUserBookmark(index) {
 		var bookmarkKey = 'topic:' + ajaxify.data.tid + ':bookmark';
 		var currentBookmark = ajaxify.data.bookmark || storage.getItem(bookmarkKey);
+		if (config.topicPostSort === 'newest_to_oldest') {
+			index = Math.max(1, ajaxify.data.postcount - index + 2);
+		}
 
 		if (ajaxify.data.postcount > ajaxify.data.bookmarkThreshold && (!currentBookmark || parseInt(index, 10) > parseInt(currentBookmark, 10) || ajaxify.data.postcount < parseInt(currentBookmark, 10))) {
 			if (app.user.uid) {
@@ -251,7 +258,7 @@ define('forum/topic', [
 					if (err) {
 						return app.alertError(err.message);
 					}
-					ajaxify.data.bookmark = index;
+					ajaxify.data.bookmark = index + 1;
 				});
 			} else {
 				storage.setItem(bookmarkKey, index);

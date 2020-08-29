@@ -21,6 +21,7 @@ Notifications.baseTypes = [
 	'notificationType_upvote',
 	'notificationType_new-topic',
 	'notificationType_new-reply',
+	'notificationType_post-edit',
 	'notificationType_follow',
 	'notificationType_new-chat',
 	'notificationType_group-invite',
@@ -94,14 +95,18 @@ Notifications.filterExists = async function (nids) {
 };
 
 Notifications.findRelated = async function (mergeIds, set) {
+	mergeIds = mergeIds.filter(Boolean);
+	if (!mergeIds.length) {
+		return [];
+	}
 	// A related notification is one in a zset that has the same mergeId
 	const nids = await db.getSortedSetRevRange(set, 0, -1);
 
 	const keys = nids.map(nid => 'notifications:' + nid);
-	let sets = await db.getObjectsFields(keys, ['mergeId']);
-	sets = sets.map(set => String(set.mergeId));
+	const notificationData = await db.getObjectsFields(keys, ['mergeId']);
+	const notificationMergeIds = notificationData.map(notifObj => String(notifObj.mergeId));
 	const mergeSet = new Set(mergeIds.map(id => String(id)));
-	return nids.filter((nid, idx) => mergeSet.has(sets[idx]));
+	return nids.filter((nid, idx) => mergeSet.has(notificationMergeIds[idx]));
 };
 
 Notifications.create = async function (data) {
@@ -321,7 +326,7 @@ Notifications.prune = async function () {
 		}, { batch: 500, interval: 100 });
 	} catch (err) {
 		if (err) {
-			winston.error('Encountered error pruning notifications', err);
+			winston.error('Encountered error pruning notifications', err.stack);
 		}
 	}
 };
@@ -368,30 +373,30 @@ Notifications.merge = async function (notifications) {
 			}
 
 			switch (mergeId) {
-			case 'notifications:upvoted_your_post_in':
-			case 'notifications:user_started_following_you':
-			case 'notifications:user_posted_to':
-			case 'notifications:user_flagged_post_in':
-			case 'notifications:user_flagged_user':
-				var usernames = _.uniq(set.map(notifObj => notifObj && notifObj.user && notifObj.user.username));
-				var numUsers = usernames.length;
+				case 'notifications:upvoted_your_post_in':
+				case 'notifications:user_started_following_you':
+				case 'notifications:user_posted_to':
+				case 'notifications:user_flagged_post_in':
+				case 'notifications:user_flagged_user':
+					var usernames = _.uniq(set.map(notifObj => notifObj && notifObj.user && notifObj.user.username));
+					var numUsers = usernames.length;
 
-				var title = utils.decodeHTMLEntities(notifications[modifyIndex].topicTitle || '');
-				var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
-				titleEscaped = titleEscaped ? (', ' + titleEscaped) : '';
+					var title = utils.decodeHTMLEntities(notifications[modifyIndex].topicTitle || '');
+					var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+					titleEscaped = titleEscaped ? (', ' + titleEscaped) : '';
 
-				if (numUsers === 2) {
-					notifications[modifyIndex].bodyShort = '[[' + mergeId + '_dual, ' + usernames.join(', ') + titleEscaped + ']]';
-				} else if (numUsers > 2) {
-					notifications[modifyIndex].bodyShort = '[[' + mergeId + '_multiple, ' + usernames[0] + ', ' + (numUsers - 1) + titleEscaped + ']]';
-				}
+					if (numUsers === 2) {
+						notifications[modifyIndex].bodyShort = '[[' + mergeId + '_dual, ' + usernames.join(', ') + titleEscaped + ']]';
+					} else if (numUsers > 2) {
+						notifications[modifyIndex].bodyShort = '[[' + mergeId + '_multiple, ' + usernames[0] + ', ' + (numUsers - 1) + titleEscaped + ']]';
+					}
 
-				notifications[modifyIndex].path = set[set.length - 1].path;
-				break;
+					notifications[modifyIndex].path = set[set.length - 1].path;
+					break;
 
-			case 'new_register':
-				notifications[modifyIndex].bodyShort = '[[notifications:' + mergeId + '_multiple, ' + set.length + ']]';
-				break;
+				case 'new_register':
+					notifications[modifyIndex].bodyShort = '[[notifications:' + mergeId + '_multiple, ' + set.length + ']]';
+					break;
 			}
 
 			// Filter out duplicates
@@ -413,4 +418,4 @@ Notifications.merge = async function (notifications) {
 	return data && data.notifications;
 };
 
-Notifications.async = require('./promisify')(Notifications);
+require('./promisify')(Notifications);

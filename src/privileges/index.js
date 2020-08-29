@@ -43,9 +43,10 @@ privileges.groupPrivilegeList = privileges.userPrivilegeList.map(privilege => 'g
 privileges.privilegeList = privileges.userPrivilegeList.concat(privileges.groupPrivilegeList);
 
 require('./global')(privileges);
+require('./admin')(privileges);
 require('./categories')(privileges);
 require('./topics')(privileges);
 require('./posts')(privileges);
 require('./users')(privileges);
 
-privileges.async = require('../promisify')(privileges);
+require('../promisify')(privileges);

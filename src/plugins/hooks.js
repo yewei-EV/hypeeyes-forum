@@ -6,11 +6,7 @@ const utils = require('../utils');
 
 module.exports = function (Plugins) {
 	Plugins.deprecatedHooks = {
-		'filter:controllers.topic.get': 'filter:topic.build',
-		'filter:user.account': 'filter:account/profile.build',
-		'filter:user.account.edit': 'filter:account/edit.build',
-		'filter:notifications.get': 'filter:notifications.build',
-		'filter:file.isFileTypeAllowed': 'filter:image.isFileTypeAllowed',
+
 	};
 
 	Plugins.internals = {
@@ -148,40 +144,40 @@ module.exports = function (Plugins) {
 		if (!Array.isArray(hookList) || !hookList.length) {
 			return;
 		}
+		// don't bubble errors from these hooks, so bad plugins don't stop startup
+		const noErrorHooks = ['static:app.load', 'static:assets.prepare', 'static:app.preload'];
 		await async.each(hookList, function (hookObj, next) {
-			if (typeof hookObj.method === 'function') {
-				let timedOut = false;
-				const timeoutId = setTimeout(function () {
-					winston.warn('[plugins] Callback timed out, hook \'' + hook + '\' in plugin \'' + hookObj.id + '\'');
-					timedOut = true;
-					next();
-				}, 5000);
+			if (typeof hookObj.method !== 'function') {
+				return next();
+			}
 
-				const onError = (err) => {
-					winston.error('[plugins] Error executing \'' + hook + '\' in plugin \'' + hookObj.id + '\'');
-					winston.error(err);
-					clearTimeout(timeoutId);
-					next();
-				};
-				const callback = (...args) => {
-					clearTimeout(timeoutId);
-					if (!timedOut) {
-						next(...args);
-					}
-				};
-				try {
-					const returned = hookObj.method(params, callback);
-					if (utils.isPromise(returned)) {
-						returned.then(
-							payload => setImmediate(callback, null, payload),
-							err => setImmediate(onError, err)
-						);
-					}
-				} catch (err) {
-					onError(err);
-				}
-			} else {
+			let timedOut = false;
+			const timeoutId = setTimeout(function () {
+				winston.warn('[plugins] Callback timed out, hook \'' + hook + '\' in plugin \'' + hookObj.id + '\'');
+				timedOut = true;
 				next();
+			}, 5000);
+
+			const callback = (err) => {
+				clearTimeout(timeoutId);
+				if (err) {
+					winston.error('[plugins] Error executing \'' + hook + '\' in plugin \'' + hookObj.id + '\'');
+					winston.error(err.stack);
+				}
+				if (!timedOut) {
+					next(noErrorHooks.includes(hook) ? null : err);
+				}
+			};
+			try {
+				const returned = hookObj.method(params, callback);
+				if (utils.isPromise(returned)) {
+					returned.then(
+						payload => setImmediate(callback, null, payload),
+						err => setImmediate(callback, err)
+					);
+				}
+			} catch (err) {
+				callback(err);
 			}
 		});
 	}

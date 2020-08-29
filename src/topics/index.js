@@ -50,8 +50,7 @@ Topics.getTopics = async function (tids, options) {
 	}
 
 	tids = await privileges.topics.filterTids('topics:read', tids, uid);
-	const topics = await Topics.getTopicsByTids(tids, options);
-	return topics;
+	return await Topics.getTopicsByTids(tids, options);
 };
 
 Topics.getTopicsByTids = async function (tids, options) {
@@ -68,7 +67,12 @@ Topics.getTopicsByTids = async function (tids, options) {
 	const uids = _.uniq(topics.map(t => t && t.uid && t.uid.toString()).filter(v => utils.isNumber(v)));
 	const cids = _.uniq(topics.map(t => t && t.cid && t.cid.toString()).filter(v => utils.isNumber(v)));
 
+	const guestTopics = topics.filter(t => t && t.uid === 0);
+	async function loadGuestHandles() {
+		return await Promise.all(guestTopics.map(topic => posts.getPostField(topic.mainPid, 'handle')));
+	}
 	const [
+		callerSettings,
 		users,
 		userSettings,
 		categoriesData,
@@ -77,42 +81,52 @@ Topics.getTopicsByTids = async function (tids, options) {
 		bookmarks,
 		teasers,
 		tags,
+		guestHandles,
 	] = await Promise.all([
+		user.getSettings(uid),
 		user.getUsersFields(uids, ['uid', 'username', 'fullname', 'userslug', 'reputation', 'postcount', 'picture', 'signature', 'banned', 'status']),
 		user.getMultipleUserSettings(uids),
-		categories.getCategoriesFields(cids, ['cid', 'name', 'slug', 'icon', 'image', 'imageClass', 'bgColor', 'color', 'disabled']),
+		categories.getCategoriesFields(cids, ['cid', 'name', 'slug', 'icon', 'backgroundImage', 'imageClass', 'bgColor', 'color', 'disabled']),
 		Topics.hasReadTopics(tids, uid),
 		Topics.isIgnoring(tids, uid),
 		Topics.getUserBookmarks(tids, uid),
 		Topics.getTeasers(topics, options),
 		Topics.getTopicsTagsObjects(tids),
+		loadGuestHandles(),
 	]);
 
-	users.forEach(function (user, index) {
-		if (meta.config.hideFullname || !userSettings[index].showfullname) {
-			user.fullname = undefined;
+	users.forEach((userObj, idx) => {
+		// Hide fullname if needed
+		if (meta.config.hideFullname || !userSettings[idx].showfullname) {
+			userObj.fullname = undefined;
 		}
 	});
 
 	const usersMap = _.zipObject(uids, users);
 	const categoriesMap = _.zipObject(cids, categoriesData);
+	const tidToGuestHandle = _.zipObject(guestTopics.map(t => t.tid), guestHandles);
+	const sortOldToNew = callerSettings.topicPostSort === 'newest_to_oldest';
+	topics.forEach(function (topic, i) {
+		if (topic) {
+			topic.category = categoriesMap[topic.cid];
+			topic.user = usersMap[topic.uid];
+			if (tidToGuestHandle[topic.tid]) {
+				topic.user.username = tidToGuestHandle[topic.tid];
+			}
+			topic.teaser = teasers[i] || null;
+			topic.tags = tags[i];
 
-	for (var i = 0; i < topics.length; i += 1) {
-		if (topics[i]) {
-			topics[i].category = categoriesMap[topics[i].cid];
-			topics[i].user = usersMap[topics[i].uid];
-			topics[i].teaser = teasers[i];
-			topics[i].tags = tags[i];
+			topic.isOwner = topic.uid === parseInt(uid, 10);
+			topic.ignored = isIgnored[i];
+			topic.unread = !hasRead[i] && !isIgnored[i];
+			topic.bookmark = sortOldToNew ?
+				Math.max(1, topic.postcount + 2 - bookmarks[i]) :
+				Math.min(topic.postcount, bookmarks[i] + 1);
+			topic.unreplied = !topic.teaser;
 
-			topics[i].isOwner = topics[i].uid === parseInt(uid, 10);
-			topics[i].ignored = isIgnored[i];
-			topics[i].unread = !hasRead[i] && !isIgnored[i];
-			topics[i].bookmark = bookmarks[i];
-			topics[i].unreplied = !topics[i].teaser;
-
-			topics[i].icons = [];
+			topic.icons = [];
 		}
-	}
+	});
 
 	topics = topics.filter(topic => topic && topic.category && !topic.category.disabled);
 
@@ -148,6 +162,8 @@ Topics.getTopicWithPosts = async function (topicData, set, uid, start, stop, rev
 	topicData.posts = posts;
 	topicData.category = category;
 	topicData.tagWhitelist = tagWhitelist[0];
+	topicData.minTags = category.minTags;
+	topicData.maxTags = category.maxTags;
 	topicData.thread_tools = threadTools.tools;
 	topicData.isFollowing = followData[0].following;
 	topicData.isNotFollowing = !followData[0].following && !followData[0].ignoring;
@@ -269,4 +285,4 @@ Topics.search = async function (tid, term) {
 	return Array.isArray(pids) ? pids : [];
 };
 
-Topics.async = require('../promisify')(Topics);
+require('../promisify')(Topics);

@@ -37,11 +37,12 @@ recentController.getData = async function (req, url, sort) {
 		states.push(categories.watchStates.ignoring);
 	}
 
-	const [settings, categoryData, rssToken, canPost] = await Promise.all([
+	const [settings, categoryData, rssToken, canPost, isPrivileged] = await Promise.all([
 		user.getSettings(req.uid),
 		helpers.getCategoriesByStates(req.uid, cid, states),
 		user.auth.getFeedToken(req.uid),
 		canPostTopic(req.uid),
+		user.isPrivileged(req.uid),
 	]);
 
 	const start = Math.max(0, (page - 1) * settings.topicsPerPage);
@@ -60,11 +61,13 @@ recentController.getData = async function (req, url, sort) {
 	});
 
 	data.canPost = canPost;
+	data.showSelect = isPrivileged;
+	data.showTopicTools = isPrivileged;
 	data.categories = categoryData.categories;
 	data.allCategoriesUrl = url + helpers.buildQueryString('', filter, '');
-	data.selectedCategory = categoryData.selectedCategory;
+	data.selectedCategory = categoryData.selectedCategory || null;
 	data.selectedCids = categoryData.selectedCids;
-	data['feeds:disableRSS'] = meta.config['feeds:disableRSS'];
+	data['feeds:disableRSS'] = meta.config['feeds:disableRSS'] || 0;
 	data.rssFeedUrl = nconf.get('relative_path') + '/' + url + '.rss';
 	if (req.loggedIn) {
 		data.rssFeedUrl += '?uid=' + req.uid + '&token=' + rssToken;
@@ -78,6 +81,7 @@ recentController.getData = async function (req, url, sort) {
 
 	var pageCount = Math.max(1, Math.ceil(data.topicCount / settings.topicsPerPage));
 	data.pagination = pagination.create(page, pageCount, req.query);
+	helpers.addLinkTags({ url: url, res: req.res, tags: data.pagination.rel });
 
 	if (req.originalUrl.startsWith(nconf.get('relative_path') + '/api/' + url) || req.originalUrl.startsWith(nconf.get('relative_path') + '/' + url)) {
 		data.title = '[[pages:' + url + ']]';

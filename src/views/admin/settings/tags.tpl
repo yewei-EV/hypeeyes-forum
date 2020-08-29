@@ -5,6 +5,12 @@
 	<div class="col-sm-10 col-xs-12">
 		<form>
 			<div class="form-group">
+				<a class="btn btn-primary" href="{config.relative_path}/admin/manage/tags">
+					<i class="fa fa-external-link"></i>
+					[[admin/settings/tags:link-to-manage]]
+				</a>
+			</div>
+			<div class="form-group">
 				<label for="minimumTagsPerTopics">[[admin/settings/tags:min-per-topic]]</label>
 				<input id="minimumTagsPerTopics" type="text" class="form-control" value="0" data-field="minimumTagsPerTopic">
 			</div>
@@ -21,7 +27,6 @@
 				<input id="maximumTagLength" type="text" class="form-control" value="15" data-field="maximumTagLength">
 			</div>
 		</form>
-		<a href="{config.relative_path}/admin/manage/tags">[[admin/settings/tags:goto-manage]]</a>
 	</div>
 </div>
 

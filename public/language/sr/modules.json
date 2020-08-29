@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Ћаскај са",
     "chat.placeholder": "Овде унесите текст поруке, притисните ентер за слање",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Пошаљи",
     "chat.no_active": "Нема активних ћаскања.",
     "chat.user_typing": "%1 куца ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Недавна ћаскања",
     "chat.contacts": "Контакти",
     "chat.message-history": "Историја порука",
+    "chat.message-deleted": "Порука је избрисана",
     "chat.options": "Опције ћаскања",
     "chat.pop-out": "Истакни ћаскање",
     "chat.minimize": "Умањи",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Отпреми датотеку",
     "composer.zen_mode": "Цео екран",
     "composer.select_category": "Изаберите категорију",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "ОК",
     "bootbox.cancel": "Откажи",
     "bootbox.confirm": "Потврди",

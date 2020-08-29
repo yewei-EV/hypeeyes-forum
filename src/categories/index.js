@@ -176,19 +176,15 @@ function calculateTopicPostCount(category) {
 		return;
 	}
 
-	var postCount = category.post_count;
-	var topicCount = category.topic_count;
-	if (!Array.isArray(category.children) || !category.children.length) {
-		category.totalPostCount = postCount;
-		category.totalTopicCount = topicCount;
-		return;
+	let postCount = category.post_count;
+	let topicCount = category.topic_count;
+	if (Array.isArray(category.children)) {
+		category.children.forEach(function (child) {
+			calculateTopicPostCount(child);
+			postCount += parseInt(child.totalPostCount, 10) || 0;
+			topicCount += parseInt(child.totalTopicCount, 10) || 0;
+		});
 	}
-
-	category.children.forEach(function (child) {
-		calculateTopicPostCount(child);
-		postCount += parseInt(child.totalPostCount, 10) || 0;
-		topicCount += parseInt(child.totalTopicCount, 10) || 0;
-	});
 
 	category.totalPostCount = postCount;
 	category.totalTopicCount = topicCount;
@@ -241,7 +237,7 @@ Categories.getChildrenCids = async function (rootCid) {
 		}
 		keys = childrenCids.map(cid => 'cid:' + cid + ':children');
 		childrenCids.forEach(cid => allCids.push(parseInt(cid, 10)));
-		recursive(keys);
+		await recursive(keys);
 	}
 	const key = 'cid:' + rootCid + ':children';
 	const childrenCids = cache.get(key);
@@ -372,4 +368,4 @@ Categories.buildForSelectCategories = function (categories, fields) {
 	return categoriesData.map(category => _.pick(category, pickFields));
 };
 
-Categories.async = require('../promisify')(Categories);
+require('../promisify')(Categories);

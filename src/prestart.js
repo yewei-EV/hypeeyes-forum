@@ -33,7 +33,7 @@ function setupWinston() {
 	}
 
 	winston.configure({
-		level: nconf.get('log-level') || (global.env === 'production' ? 'info' : 'verbose'),
+		level: nconf.get('log-level') || (process.env.NODE_ENV === 'production' ? 'info' : 'verbose'),
 		format: winston.format.combine.apply(null, formats),
 		transports: [
 			new winston.transports.Console({
@@ -54,14 +54,22 @@ function loadConfig(configFile) {
 		upload_path: 'public/uploads',
 		views_dir: path.join(dirname, 'build/public/templates'),
 		version: pkg.version,
+		isCluster: false,
+		isPrimary: true,
+		jobsDisabled: false,
 	});
 
-	if (!nconf.get('isCluster')) {
-		nconf.set('isPrimary', 'true');
-		nconf.set('isCluster', 'false');
-	}
-	var isPrimary = nconf.get('isPrimary');
-	nconf.set('isPrimary', isPrimary === undefined ? 'true' : isPrimary);
+	// Explicitly cast as Bool, loader.js passes in isCluster as string 'true'/'false'
+	var castAsBool = ['isCluster', 'isPrimary', 'jobsDisabled'];
+	nconf.stores.env.readOnly = false;
+	castAsBool.forEach(function (prop) {
+		var value = nconf.get(prop);
+		if (value !== undefined) {
+			nconf.set(prop, typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true');
+		}
+	});
+	nconf.stores.env.readOnly = true;
+	nconf.set('runJobs', nconf.get('isPrimary') && !nconf.get('jobsDisabled'));
 
 	// Ensure themes_path is a full filepath
 	nconf.set('themes_path', path.resolve(dirname, nconf.get('themes_path')));
@@ -71,22 +79,23 @@ function loadConfig(configFile) {
 	nconf.set('upload_path', path.resolve(nconf.get('base_dir'), nconf.get('upload_path')));
 	nconf.set('upload_url', '/assets/uploads');
 
-	if (nconf.get('url')) {
-		nconf.set('url_parsed', url.parse(nconf.get('url')));
+
+	// nconf defaults, if not set in config
+	if (!nconf.get('sessionKey')) {
+		nconf.set('sessionKey', 'express.sid');
 	}
 
-	// Explicitly cast 'jobsDisabled' as Bool
-	var castAsBool = ['jobsDisabled'];
-	nconf.stores.env.readOnly = false;
-	castAsBool.forEach(function (prop) {
-		var value = nconf.get(prop);
-		if (value) {
-			nconf.set(prop, typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true');
-		}
-	});
-	nconf.stores.env.readOnly = true;
-
-	nconf.set('runJobs', nconf.get('isPrimary') === 'true' && !nconf.get('jobsDisabled'));
+	if (nconf.get('url')) {
+		nconf.set('url_parsed', url.parse(nconf.get('url')));
+		// Parse out the relative_url and other goodies from the configured URL
+		const urlObject = url.parse(nconf.get('url'));
+		const relativePath = urlObject.pathname !== '/' ? urlObject.pathname.replace(/\/+$/, '') : '';
+		nconf.set('base_url', urlObject.protocol + '//' + urlObject.host);
+		nconf.set('secure', urlObject.protocol === 'https:');
+		nconf.set('use_port', !!urlObject.port);
+		nconf.set('relative_path', relativePath);
+		nconf.set('port', nconf.get('PORT') || nconf.get('port') || urlObject.port || (nconf.get('PORT_ENV_VAR') ? nconf.get(nconf.get('PORT_ENV_VAR')) : false) || 4567);
+	}
 }
 
 function versionCheck() {

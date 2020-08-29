@@ -87,22 +87,22 @@ Loader.addWorkerEvents = function (worker) {
 	worker.on('message', function (message) {
 		if (message && typeof message === 'object' && message.action) {
 			switch (message.action) {
-			case 'restart':
-				console.log('[cluster] Restarting...');
-				Loader.restart();
-				break;
-			case 'pubsub':
-				workers.forEach(function (w) {
-					w.send(message);
-				});
-				break;
-			case 'socket.io':
-				workers.forEach(function (w) {
-					if (w !== worker) {
+				case 'restart':
+					console.log('[cluster] Restarting...');
+					Loader.restart();
+					break;
+				case 'pubsub':
+					workers.forEach(function (w) {
 						w.send(message);
-					}
-				});
-				break;
+					});
+					break;
+				case 'socket.io':
+					workers.forEach(function (w) {
+						if (w !== worker) {
+							w.send(message);
+						}
+					});
+					break;
 			}
 		}
 	});
@@ -231,7 +231,7 @@ fs.open(pathToConfig, 'r', function (err) {
 			cwd: process.cwd(),
 		});
 
-		fs.writeFileSync(pidFilePath, process.pid);
+		fs.writeFileSync(pidFilePath, String(process.pid));
 	}
 
 	async.series([

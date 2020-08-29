@@ -5,12 +5,6 @@
 		var winston = require('winston');
 
 		module.exports = factory(require('xregexp'), winston);
-		module.exports.walk = function (dir, done) {
-			// DEPRECATED
-			var file = require('../../src/file');
-			winston.warn('[deprecated] `utils.walk` is deprecated. Use `file.walk` instead.');
-			file.walk(dir, done);
-		};
 
 		process.profile = function (operation, start) {
 			console.log('%s took %d milliseconds', operation, process.elapsedTimeSince(start));
@@ -391,7 +385,7 @@
 		},
 
 		isUserNameValid: function (name) {
-			return (name && name !== '' && (/^['"\s\-+.*[\]0-9\u00BF-\u1FFF\u2C00-\uD7FF\w]+$/.test(name)));
+			return (name && name !== '' && (/^['" \-+.*[\]0-9\u00BF-\u1FFF\u2C00-\uD7FF\w]+$/.test(name)));
 		},
 
 		isPasswordValid: function (password) {
@@ -487,9 +481,18 @@
 			});
 		},
 
+		// https://github.com/sindresorhus/is-absolute-url
+		isAbsoluteUrlRE: /^[a-zA-Z][a-zA-Z\d+\-.]*:/,
+		isWinPathRE: /^[a-zA-Z]:\\/,
+		isAbsoluteUrl: function (url) {
+			if (utils.isWinPathRE.test(url)) {
+				return false;
+			}
+			return utils.isAbsoluteUrlRE.test(url);
+		},
+
 		isRelativeUrl: function (url) {
-			var firstChar = String(url || '').charAt(0);
-			return (firstChar === '.' || firstChar === '/');
+			return !utils.isAbsoluteUrl(url);
 		},
 
 		makeNumbersHumanReadable: function (elements) {
@@ -652,17 +655,21 @@
 
 		// get all the url params in a single key/value hash
 		params: function (options) {
-			var a;
 			var hash = {};
-			var params;
 
 			options = options || {};
 			options.skipToType = options.skipToType || {};
 
-			if (options.url) {
-				a = utils.urlToLocation(options.url);
+			var searchStr = window.location.search;
+			if (options.hasOwnProperty('url')) {
+				if (options.url) {
+					var a = utils.urlToLocation(options.url);
+					searchStr = a ? a.search : '';
+				} else {
+					searchStr = '';
+				}
 			}
-			params = (a ? a.search : window.location.search).substring(1).split('&');
+			var params = searchStr.substring(1).split('&');
 
 			params.forEach(function (param) {
 				var val = param.split('=');

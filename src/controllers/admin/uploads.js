@@ -4,9 +4,6 @@ const path = require('path');
 const nconf = require('nconf');
 const mime = require('mime');
 const fs = require('fs');
-const util = require('util');
-const readdirAsync = util.promisify(fs.readdir);
-const statAsync = util.promisify(fs.stat);
 
 const meta = require('../../meta');
 const posts = require('../../posts');
@@ -27,7 +24,7 @@ uploadsController.get = async function (req, res, next) {
 	const itemsPerPage = 20;
 	const page = parseInt(req.query.page, 10) || 1;
 	try {
-		let files = await readdirAsync(currentFolder);
+		let files = await fs.promises.readdir(currentFolder);
 		files = files.filter(filename => filename !== '.gitignore');
 		const itemCount = files.length;
 		var start = Math.max(0, (page - 1) * itemsPerPage);
@@ -91,10 +88,10 @@ async function filesToData(currentDir, files) {
 }
 
 async function getFileData(currentDir, file) {
-	const stat = await statAsync(path.join(currentDir, file));
+	const stat = await fs.promises.stat(path.join(currentDir, file));
 	let filesInDir = [];
 	if (stat.isDirectory()) {
-		filesInDir = await readdirAsync(path.join(currentDir, file));
+		filesInDir = await fs.promises.readdir(path.join(currentDir, file));
 	}
 	const url = nconf.get('upload_url') + currentDir.replace(nconf.get('upload_path'), '') + '/' + file;
 	return {
@@ -146,7 +143,7 @@ uploadsController.uploadFavicon = async function (req, res, next) {
 uploadsController.uploadTouchIcon = async function (req, res, next) {
 	const uploadedFile = req.files.files[0];
 	const allowedTypes = ['image/png'];
-	const sizes = [36, 48, 72, 96, 144, 192];
+	const sizes = [36, 48, 72, 96, 144, 192, 512];
 
 	if (validateUpload(res, uploadedFile, allowedTypes)) {
 		try {
@@ -243,7 +240,7 @@ async function uploadImage(filename, folder, uploadedFile, req, res, next) {
 	let imageData;
 	try {
 		if (plugins.hasListeners('filter:uploadImage')) {
-			imageData = await plugins.fireHook('filter:uploadImage', { image: uploadedFile, uid: req.uid });
+			imageData = await plugins.fireHook('filter:uploadImage', { image: uploadedFile, uid: req.uid, folder: folder });
 		} else {
 			imageData = await file.saveFileToLocal(filename, folder, uploadedFile.path);
 		}

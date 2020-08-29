@@ -1,12 +1,14 @@
 'use strict';
 
-var validator = require('validator');
+const validator = require('validator');
 
-var db = require('../database');
+const db = require('../database');
+const meta = require('../meta');
 
 const intFields = [
 	'cid', 'parentCid', 'disabled', 'isSection', 'order',
 	'topic_count', 'post_count', 'numRecentReplies',
+	'minTags', 'maxTags',
 ];
 
 module.exports = function (Categories) {
@@ -14,13 +16,9 @@ module.exports = function (Categories) {
 		if (!Array.isArray(cids) || !cids.length) {
 			return [];
 		}
-		let categories;
+
 		const keys = cids.map(cid => 'category:' + cid);
-		if (fields.length) {
-			categories = await db.getObjectsFields(keys, fields);
-		} else {
-			categories = await db.getObjects(keys);
-		}
+		const categories = await (fields.length ? db.getObjectsFields(keys, fields) : db.getObjects(keys));
 		categories.forEach(category => modifyCategory(category, fields));
 		return categories;
 	};
@@ -58,16 +56,32 @@ module.exports = function (Categories) {
 	};
 };
 
+function defaultMinMaxTags(category, fields, fieldName, defaultField) {
+	if (!fields.length || fields.includes(fieldName)) {
+		const useDefault = !category.hasOwnProperty(fieldName) ||
+			category[fieldName] === null ||
+			category[fieldName] === '' ||
+			!parseInt(category[fieldName], 10);
+		category[fieldName] = useDefault ? meta.config[defaultField] : category[fieldName];
+	}
+}
+
 function modifyCategory(category, fields) {
 	if (!category) {
 		return;
 	}
 
+	defaultMinMaxTags(category, fields, 'minTags', 'minimumTagsPerTopic');
+	defaultMinMaxTags(category, fields, 'maxTags', 'maximumTagsPerTopic');
+
 	db.parseIntFields(category, intFields, fields);
 
-	if (category.hasOwnProperty('name')) {
-		category.name = validator.escape(String(category.name || ''));
-	}
+	const escapeFields = ['name', 'color', 'bgColor', 'imageClass', 'class', 'link'];
+	escapeFields.forEach((field) => {
+		if (category.hasOwnProperty(field)) {
+			category[field] = validator.escape(String(category[field] || ''));
+		}
+	});
 
 	if (category.hasOwnProperty('icon')) {
 		category.icon = category.icon || 'hidden';
@@ -79,10 +93,6 @@ function modifyCategory(category, fields) {
 
 	if (category.hasOwnProperty('topic_count')) {
 		category.totalTopicCount = category.topic_count;
-	}
-
-	if (category.image) {
-		category.backgroundImage = category.image;
 	}
 
 	if (category.description) {

@@ -8,7 +8,7 @@ const _ = require('lodash');
 const versions = require('../../admin/versions');
 const db = require('../../database');
 const meta = require('../../meta');
-const analytics = require('../../analytics').async;
+const analytics = require('../../analytics');
 const plugins = require('../../plugins');
 const user = require('../../user');
 const utils = require('../../utils');
@@ -16,15 +16,16 @@ const utils = require('../../utils');
 const dashboardController = module.exports;
 
 dashboardController.get = async function (req, res) {
-	const [stats, notices, latestVersion, lastrestart] = await Promise.all([
+	const [stats, notices, latestVersion, lastrestart, isAdmin] = await Promise.all([
 		getStats(),
 		getNotices(),
 		getLatestVersion(),
 		getLastRestart(),
+		user.isAdministrator(req.uid),
 	]);
 	const version = nconf.get('version');
 
-	res.render('admin/general/dashboard', {
+	res.render('admin/dashboard', {
 		version: version,
 		lookupFailed: latestVersion === null,
 		latestVersion: latestVersion,
@@ -34,6 +35,7 @@ dashboardController.get = async function (req, res) {
 		stats: stats,
 		canRestart: !!process.send,
 		lastrestart: lastrestart,
+		showSystemControls: isAdmin,
 	});
 };
 
@@ -41,14 +43,14 @@ async function getNotices() {
 	const notices = [
 		{
 			done: !meta.reloadRequired,
-			doneText: '[[admin/general/dashboard:restart-not-required]]',
-			notDoneText: '[[admin/general/dashboard:restart-required]]',
+			doneText: '[[admin/dashboard:restart-not-required]]',
+			notDoneText: '[[admin/dashboard:restart-required]]',
 		},
 		{
 			done: plugins.hasListeners('filter:search.query'),
-			doneText: '[[admin/general/dashboard:search-plugin-installed]]',
-			notDoneText: '[[admin/general/dashboard:search-plugin-not-installed]]',
-			tooltip: '[[admin/general/dashboard:search-plugin-tooltip]]',
+			doneText: '[[admin/dashboard:search-plugin-installed]]',
+			notDoneText: '[[admin/dashboard:search-plugin-not-installed]]',
+			tooltip: '[[admin/dashboard:search-plugin-tooltip]]',
 			link: '/admin/extend/plugins',
 		},
 	];
@@ -56,7 +58,7 @@ async function getNotices() {
 	if (global.env !== 'production') {
 		notices.push({
 			done: false,
-			notDoneText: '[[admin/general/dashboard:running-in-development]]',
+			notDoneText: '[[admin/dashboard:running-in-development]]',
 		});
 	}
 
@@ -65,10 +67,9 @@ async function getNotices() {
 
 async function getLatestVersion() {
 	try {
-		const result = await versions.getLatestVersion();
-		return result;
+		return await versions.getLatestVersion();
 	} catch (err) {
-		winston.error('[acp] Failed to fetch latest version', err);
+		winston.error('[acp] Failed to fetch latest version', err.stack);
 	}
 	return null;
 }
@@ -93,7 +94,7 @@ dashboardController.getAnalytics = async (req, res, next) => {
 	}
 
 	const method = req.query.units === 'days' ? analytics.getDailyStatsForSet : analytics.getHourlyStatsForSet;
-	let payload = await Promise.all(sets.map(async set => method('analytics:' + set, until, count)));
+	let payload = await Promise.all(sets.map(set => method('analytics:' + set, until, count)));
 	payload = _.zipObject(sets, payload);
 
 	res.json({
@@ -120,10 +121,10 @@ async function getStats() {
 		getStatsForSet('posts:pid', 'postCount'),
 		getStatsForSet('topics:tid', 'topicCount'),
 	]);
-	results[0].name = '[[admin/general/dashboard:unique-visitors]]';
-	results[1].name = '[[admin/general/dashboard:new-users]]';
-	results[2].name = '[[admin/general/dashboard:posts]]';
-	results[3].name = '[[admin/general/dashboard:topics]]';
+	results[0].name = '[[admin/dashboard:unique-visitors]]';
+	results[1].name = '[[admin/dashboard:new-users]]';
+	results[2].name = '[[admin/dashboard:posts]]';
+	results[3].name = '[[admin/dashboard:topics]]';
 	cache.set('admin:stats', results, 600000);
 	return results;
 }

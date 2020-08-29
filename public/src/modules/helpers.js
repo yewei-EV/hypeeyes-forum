@@ -70,12 +70,13 @@
 	function buildLinkTag(tag) {
 		var link = tag.link ? 'link="' + tag.link + '" ' : '';
 		var rel = tag.rel ? 'rel="' + tag.rel + '" ' : '';
+		var as = tag.as ? 'as="' + tag.as + '" ' : '';
 		var type = tag.type ? 'type="' + tag.type + '" ' : '';
 		var href = tag.href ? 'href="' + tag.href + '" ' : '';
 		var sizes = tag.sizes ? 'sizes="' + tag.sizes + '" ' : '';
 		var title = tag.title ? 'title="' + tag.title + '" ' : '';
 
-		return '<link ' + link + rel + type + sizes + title + href + '/>\n\t';
+		return '<link ' + link + rel + as + type + sizes + title + href + '/>\n\t';
 	}
 
 	function stringify(obj) {
@@ -188,11 +189,11 @@
 			var spidersEnabled = ['groups:find', 'groups:read', 'groups:topics:read', 'groups:view:users', 'groups:view:tags', 'groups:view:groups'];
 			var globalModDisabled = ['groups:moderate'];
 			var disabled =
-				(member === 'guests' && guestDisabled.includes(priv.name)) ||
+				(member === 'guests' && (guestDisabled.includes(priv.name) || priv.name.startsWith('groups:admin:'))) ||
 				(member === 'spiders' && !spidersEnabled.includes(priv.name)) ||
 				(member === 'Global Moderators' && globalModDisabled.includes(priv.name));
 
-			return '<td class="text-center" data-privilege="' + priv.name + '"><input type="checkbox"' + (priv.state ? ' checked' : '') + (disabled ? ' disabled="disabled"' : '') + ' /></td>';
+			return '<td class="text-center" data-privilege="' + priv.name + '" data-value="' + priv.state + '"><input autocomplete="off" type="checkbox"' + (priv.state ? ' checked' : '') + (disabled ? ' disabled="disabled"' : '') + ' /></td>';
 		}).join('');
 	}
 
@@ -225,49 +226,49 @@
 		var icons = '';
 
 		switch (data.platform) {
-		case 'Linux':
-			icons += '<i class="fa fa-fw fa-linux"></i>';
-			break;
-		case 'Microsoft Windows':
-			icons += '<i class="fa fa-fw fa-windows"></i>';
-			break;
-		case 'Apple Mac':
-			icons += '<i class="fa fa-fw fa-apple"></i>';
-			break;
-		case 'Android':
-			icons += '<i class="fa fa-fw fa-android"></i>';
-			break;
-		case 'iPad':
-			icons += '<i class="fa fa-fw fa-tablet"></i>';
-			break;
-		case 'iPod':	// intentional fall-through
-		case 'iPhone':
-			icons += '<i class="fa fa-fw fa-mobile"></i>';
-			break;
-		default:
-			icons += '<i class="fa fa-fw fa-question-circle"></i>';
-			break;
+			case 'Linux':
+				icons += '<i class="fa fa-fw fa-linux"></i>';
+				break;
+			case 'Microsoft Windows':
+				icons += '<i class="fa fa-fw fa-windows"></i>';
+				break;
+			case 'Apple Mac':
+				icons += '<i class="fa fa-fw fa-apple"></i>';
+				break;
+			case 'Android':
+				icons += '<i class="fa fa-fw fa-android"></i>';
+				break;
+			case 'iPad':
+				icons += '<i class="fa fa-fw fa-tablet"></i>';
+				break;
+			case 'iPod':	// intentional fall-through
+			case 'iPhone':
+				icons += '<i class="fa fa-fw fa-mobile"></i>';
+				break;
+			default:
+				icons += '<i class="fa fa-fw fa-question-circle"></i>';
+				break;
 		}
 
 		switch (data.browser) {
-		case 'Chrome':
-			icons += '<i class="fa fa-fw fa-chrome"></i>';
-			break;
-		case 'Firefox':
-			icons += '<i class="fa fa-fw fa-firefox"></i>';
-			break;
-		case 'Safari':
-			icons += '<i class="fa fa-fw fa-safari"></i>';
-			break;
-		case 'IE':
-			icons += '<i class="fa fa-fw fa-internet-explorer"></i>';
-			break;
-		case 'Edge':
-			icons += '<i class="fa fa-fw fa-edge"></i>';
-			break;
-		default:
-			icons += '<i class="fa fa-fw fa-question-circle"></i>';
-			break;
+			case 'Chrome':
+				icons += '<i class="fa fa-fw fa-chrome"></i>';
+				break;
+			case 'Firefox':
+				icons += '<i class="fa fa-fw fa-firefox"></i>';
+				break;
+			case 'Safari':
+				icons += '<i class="fa fa-fw fa-safari"></i>';
+				break;
+			case 'IE':
+				icons += '<i class="fa fa-fw fa-internet-explorer"></i>';
+				break;
+			case 'Edge':
+				icons += '<i class="fa fa-fw fa-edge"></i>';
+				break;
+			default:
+				icons += '<i class="fa fa-fw fa-question-circle"></i>';
+				break;
 		}
 
 		return icons;
@@ -287,6 +288,7 @@
 			'alt="' + userObj.username + '"',
 			'title="' + userObj.username + '"',
 			'data-uid="' + userObj.uid + '"',
+			'loading="lazy"',
 		];
 		var styles = [];
 		classNames = classNames || '';

@@ -45,9 +45,9 @@ module.exports = function (User) {
 
 			validateUpload(data, meta.config.maximumCoverImageSize, ['image/png', 'image/jpeg', 'image/bmp']);
 
-			picture.path = await getTempPath(data);
+			picture.path = await image.writeImageDataToTempFile(data.imageData);
 
-			const extension = file.typeToExtension(getMimeType(data));
+			const extension = file.typeToExtension(image.mimeFromBase64(data.imageData));
 			const filename = data.uid + '-profilecover' + extension;
 			const uploadData = await image.uploadImage(filename, 'profile', picture);
 
@@ -61,10 +61,52 @@ module.exports = function (User) {
 				url: uploadData.url,
 			};
 		} finally {
-			file.delete(picture.path || (data.file && data.file.path));
+			await file.delete(picture.path);
 		}
 	};
 
+	// uploads a image file as profile picture
+	User.uploadCroppedPictureFile = async function (data) {
+		const userPhoto = data.file;
+		if (!meta.config.allowProfileImageUploads) {
+			throw new Error('[[error:profile-image-uploads-disabled]]');
+		}
+
+		if (userPhoto.size > meta.config.maximumProfileImageSize * 1024) {
+			throw new Error('[[error:file-too-big, ' + meta.config.maximumProfileImageSize + ']]');
+		}
+
+		if (!userPhoto.type || !User.getAllowedImageTypes().includes(userPhoto.type)) {
+			throw new Error('[[error:invalid-image]]');
+		}
+
+		const extension = file.typeToExtension(userPhoto.type);
+		if (!extension) {
+			throw new Error('[[error:invalid-image-extension]]');
+		}
+
+		const newPath = await convertToPNG(userPhoto.path);
+
+		await image.resizeImage({
+			path: newPath,
+			width: meta.config.profileImageDimension,
+			height: meta.config.profileImageDimension,
+		});
+
+		const filename = generateProfileImageFilename(data.uid, extension);
+		const uploadedImage = await image.uploadImage(filename, 'profile', {
+			uid: data.uid,
+			path: newPath,
+		});
+
+		await User.setUserFields(data.uid, {
+			uploadedpicture: uploadedImage.url,
+			picture: uploadedImage.url,
+		});
+		return uploadedImage;
+	};
+
+	// uploads image data in base64 as profile picture
 	User.uploadCroppedPicture = async function (data) {
 		const picture = {
 			name: 'profileAvatar',
@@ -78,12 +120,12 @@ module.exports = function (User) {
 
 			validateUpload(data, meta.config.maximumProfileImageSize, User.getAllowedImageTypes());
 
-			const extension = file.typeToExtension(getMimeType(data));
+			const extension = file.typeToExtension(image.mimeFromBase64(data.imageData));
 			if (!extension) {
 				throw new Error('[[error:invalid-image-extension]]');
 			}
 
-			picture.path = await getTempPath(data);
+			picture.path = await image.writeImageDataToTempFile(data.imageData);
 			picture.path = await convertToPNG(picture.path);
 
 			await image.resizeImage({
@@ -101,35 +143,23 @@ module.exports = function (User) {
 			});
 			return uploadedImage;
 		} finally {
-			file.delete(picture.path || (data.file && data.file.path));
+			await file.delete(picture.path);
 		}
 	};
 
 	function validateUpload(data, maxSize, allowedTypes) {
-		if (!data.imageData && !data.file) {
+		if (!data.imageData) {
 			throw new Error('[[error:invalid-data]]');
 		}
-		// const size = data.file ? data.file.size : image.sizeFromBase64(data.imageData);
-		const size = data.file ? data.file.size : maxSize * 1024;
+		const size = Math.max(image.sizeFromBase64(data.imageData), maxSize * 1024);
 		if (size > maxSize * 1024) {
 			throw new Error('[[error:file-too-big, ' + maxSize + ']]');
 		}
 
-		const type = getMimeType(data);
+		const type = image.mimeFromBase64(data.imageData);
 		if (!type || !allowedTypes.includes(type)) {
 			throw new Error('[[error:invalid-image]]');
 		}
-	}
-
-	function getMimeType(data) {
-		return data.file ? data.file.type : image.mimeFromBase64(data.imageData);
-	}
-
-	async function getTempPath(data) {
-		if (data.file) {
-			return data.file.path;
-		}
-		return await image.writeImageDataToTempFile(data.imageData);
 	}
 
 	async function convertToPNG(path) {
@@ -138,7 +168,7 @@ module.exports = function (User) {
 			return path;
 		}
 		const newPath = await image.normalise(path);
-		file.delete(path);
+		await file.delete(path);
 		return newPath;
 	}
 

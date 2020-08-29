@@ -1,14 +1,12 @@
 'use strict';
 
 const nconf = require('nconf');
-const winston = require('winston');
 
 const user = require('../user');
 const meta = require('../meta');
 const topics = require('../topics');
 const posts = require('../posts');
 const privileges = require('../privileges');
-const plugins = require('../plugins');
 const helpers = require('./helpers');
 const pagination = require('../pagination');
 const utils = require('../utils');
@@ -46,7 +44,7 @@ topicsController.get = async function getTopic(req, res, callback) {
 	}
 
 	if (!res.locals.isAPI && (!req.params.slug || topicData.slug !== tid + '/' + req.params.slug) && (topicData.slug && topicData.slug !== tid + '/')) {
-		return helpers.redirect(res, '/topic/' + topicData.slug + (postIndex ? '/' + postIndex : '') + (currentPage > 1 ? '?page=' + currentPage : ''));
+		return helpers.redirect(res, '/topic/' + topicData.slug + (postIndex ? '/' + postIndex : '') + (currentPage > 1 ? '?page=' + currentPage : ''), true);
 	}
 
 	if (postIndex === 'unread') {
@@ -69,18 +67,13 @@ topicsController.get = async function getTopic(req, res, callback) {
 
 	topics.modifyPostsByPrivilege(topicData, userPrivileges);
 
-	const hookData = await plugins.fireHook('filter:controllers.topic.get', { topicData: topicData, uid: req.uid });
-	await Promise.all([
-		buildBreadcrumbs(hookData.topicData),
-		addTags(topicData, req, res),
-	]);
-
 	topicData.privileges = userPrivileges;
 	topicData.topicStaleDays = meta.config.topicStaleDays;
 	topicData['reputation:disabled'] = meta.config['reputation:disabled'];
 	topicData['downvote:disabled'] = meta.config['downvote:disabled'];
-	topicData['feeds:disableRSS'] = meta.config['feeds:disableRSS'];
+	topicData['feeds:disableRSS'] = meta.config['feeds:disableRSS'] || 0;
 	topicData.bookmarkThreshold = meta.config.bookmarkThreshold;
+	topicData.necroThreshold = meta.config.necroThreshold;
 	topicData.postEditDuration = meta.config.postEditDuration;
 	topicData.postDeleteDuration = meta.config.postDeleteDuration;
 	topicData.scrollToMyPost = settings.scrollToMyPost;
@@ -92,17 +85,20 @@ topicsController.get = async function getTopic(req, res, callback) {
 	}
 
 	topicData.postIndex = postIndex;
+
+	await Promise.all([
+		buildBreadcrumbs(topicData),
+		addTags(topicData, req, res),
+		incrementViewCount(req, tid),
+		markAsRead(req, tid),
+		analytics.increment(['pageviews:byCid:' + topicData.category.cid]),
+	]);
+
 	topicData.pagination = pagination.create(currentPage, pageCount, req.query);
 	topicData.pagination.rel.forEach(function (rel) {
 		rel.href = nconf.get('url') + '/topic/' + topicData.slug + rel.href;
 		res.locals.linkTags.push(rel);
 	});
-
-	incrementViewCount(req, tid);
-
-	markAsRead(req, tid);
-
-	analytics.increment(['pageviews:byCid:' + topicData.category.cid]);
 
 	res.render('topic', topicData);
 };
@@ -126,27 +122,24 @@ function calculateStartStop(page, postIndex, settings) {
 	return { start: Math.max(0, start), stop: Math.max(0, stop) };
 }
 
-function incrementViewCount(req, tid) {
+async function incrementViewCount(req, tid) {
 	if (req.uid >= 1) {
 		req.session.tids_viewed = req.session.tids_viewed || {};
 		if (!req.session.tids_viewed[tid] || req.session.tids_viewed[tid] < Date.now() - 3600000) {
-			topics.increaseViewCount(tid);
+			await topics.increaseViewCount(tid);
 			req.session.tids_viewed[tid] = Date.now();
 		}
 	}
 }
 
-function markAsRead(req, tid) {
+async function markAsRead(req, tid) {
 	if (req.loggedIn) {
-		topics.markAsRead([tid], req.uid, function (err, markedRead) {
-			if (err) {
-				return winston.error(err);
-			}
-			if (markedRead) {
-				topics.pushUnreadCount(req.uid);
-				topics.markTopicNotificationsRead([tid], req.uid);
-			}
-		});
+		const markedRead = await topics.markAsRead([tid], req.uid);
+		const promises = [topics.markTopicNotificationsRead([tid], req.uid)];
+		if (markedRead) {
+			promises.push(topics.pushUnreadCount(req.uid));
+		}
+		await Promise.all(promises);
 	}
 }
 
@@ -155,6 +148,7 @@ async function buildBreadcrumbs(topicData) {
 		{
 			text: topicData.category.name,
 			url: nconf.get('relative_path') + '/category/' + topicData.category.slug,
+			cid: topicData.category.cid,
 		},
 		{
 			text: topicData.title,
@@ -165,9 +159,9 @@ async function buildBreadcrumbs(topicData) {
 }
 
 async function addTags(topicData, req, res) {
-	var postAtIndex = topicData.posts.find(p => parseInt(p.index, 10) === parseInt(Math.max(0, req.params.post_index - 1), 10));
-
-	var description = '';
+	const postIndex = parseInt(req.params.post_index, 10) || 0;
+	const postAtIndex = topicData.posts.find(p => parseInt(p.index, 10) === parseInt(Math.max(0, postIndex - 1), 10));
+	let description = '';
 	if (postAtIndex && postAtIndex.content) {
 		description = utils.stripHTMLTags(utils.decodeHTMLEntities(postAtIndex.content));
 	}
@@ -328,13 +322,13 @@ topicsController.pagination = async function (req, res, callback) {
 		return helpers.notAllowed(req, res);
 	}
 
-	var postCount = topic.postcount;
-	var pageCount = Math.max(1, Math.ceil(postCount / settings.postsPerPage));
+	const postCount = topic.postcount;
+	const pageCount = Math.max(1, Math.ceil(postCount / settings.postsPerPage));
 
-	var paginationData = pagination.create(currentPage, pageCount);
+	const paginationData = pagination.create(currentPage, pageCount);
 	paginationData.rel.forEach(function (rel) {
 		rel.href = nconf.get('url') + '/topic/' + topic.slug + rel.href;
 	});
 
-	res.json(paginationData);
+	res.json({ pagination: paginationData });
 };

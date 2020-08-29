@@ -23,7 +23,9 @@ function setup(initConfig) {
 	install.values = initConfig;
 
 	async.series([
-		install.setup,
+		async function () {
+			return await install.setup();
+		},
 		function (next) {
 			var configFile = paths.config;
 			if (nconf.get('config')) {
@@ -31,9 +33,13 @@ function setup(initConfig) {
 			}
 
 			prestart.loadConfig(configFile);
-			next();
+
+			if (!nconf.get('skip-build')) {
+				build.buildAll(next);
+			} else {
+				setImmediate(next);
+			}
 		},
-		build.buildAll,
 	], function (err, data) {
 		// Disregard build step data
 		data = data[0];
@@ -47,7 +53,7 @@ function setup(initConfig) {
 		console.log('\n' + separator + '\n');
 
 		if (err) {
-			winston.error('There was a problem completing NodeBB setup', err);
+			winston.error('There was a problem completing NodeBB setup', err.stack);
 			throw err;
 		} else {
 			if (data.hasOwnProperty('password')) {

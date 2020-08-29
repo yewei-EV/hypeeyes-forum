@@ -2,20 +2,18 @@
 
 const path = require('path');
 const fs = require('fs');
-const rimraf = require('rimraf');
-const mkdirp = require('mkdirp');
-
 const util = require('util');
 
-const readdirAsync = util.promisify(fs.readdir);
+let mkdirp = require('mkdirp');
+mkdirp = mkdirp.hasOwnProperty('native') ? mkdirp : util.promisify(mkdirp);
+
+const rimraf = require('rimraf');
 const rimrafAsync = util.promisify(rimraf);
-const mkdirpAsync = util.promisify(mkdirp);
-const writeFileAsync = util.promisify(fs.writeFile);
 
 const file = require('../file');
 const plugins = require('../plugins');
 const user = require('../user');
-const Meta = require('../meta');
+const Meta = require('./index');
 
 const soundsPath = path.join(__dirname, '../../build/public/sounds');
 const uploadsPath = path.join(__dirname, '../../public/uploads/sounds');
@@ -25,7 +23,7 @@ const Sounds = module.exports;
 Sounds.addUploads = async function addUploads() {
 	let files = [];
 	try {
-		files = await readdirAsync(uploadsPath);
+		files = await fs.promises.readdir(uploadsPath);
 	} catch (err) {
 		if (err.code !== 'ENOENT') {
 			throw err;
@@ -70,9 +68,9 @@ Sounds.build = async function build() {
 	map.unshift({});
 	map = Object.assign.apply(null, map);
 	await rimrafAsync(soundsPath);
-	await mkdirpAsync(soundsPath);
+	await mkdirp(soundsPath);
 
-	await writeFileAsync(path.join(soundsPath, 'fileMap.json'), JSON.stringify(map));
+	await fs.promises.writeFile(path.join(soundsPath, 'fileMap.json'), JSON.stringify(map));
 
 	await Promise.all(plugins.soundpacks.map(pack => file.linkDirs(pack.dir, path.join(soundsPath, pack.id), false)));
 };

@@ -23,14 +23,17 @@ Auth.initialize = function (app, middleware) {
 		passportSessionMiddleware(req, res, next);
 	});
 
-	app.use(Auth.setAuthVars);
+	app.use(function (req, res, next) {
+		Auth.setAuthVars(req, res);
+		next();
+	});
 
 	Auth.app = app;
 	Auth.middleware = middleware;
 };
 
-Auth.setAuthVars = function setAuthVars(req, res, next) {
-	var isSpider = req.isSpider();
+Auth.setAuthVars = function setAuthVars(req) {
+	const isSpider = req.isSpider();
 	req.loggedIn = !isSpider && !!req.user;
 	if (req.user) {
 		req.uid = parseInt(req.user.uid, 10);
@@ -39,7 +42,6 @@ Auth.setAuthVars = function setAuthVars(req, res, next) {
 	} else {
 		req.uid = 0;
 	}
-	next();
 };
 
 Auth.getLoginStrategies = function () {
@@ -65,7 +67,7 @@ Auth.reloadRoutes = async function (params) {
 	loginStrategies.forEach(function (strategy) {
 		if (strategy.url) {
 			router.get(strategy.url, Auth.middleware.applyCSRF, function (req, res, next) {
-				req.session.ssoState = req.csrfToken();
+				req.session.ssoState = req.csrfToken && req.csrfToken();
 				passport.authenticate(strategy.name, {
 					scope: strategy.scope,
 					prompt: strategy.prompt || undefined,
@@ -87,8 +89,7 @@ Auth.reloadRoutes = async function (params) {
 			// save returnTo for later usage in /register/complete
 			// passport seems to remove `req.session.returnTo` after it redirects
 			req.session.registration.returnTo = req.session.returnTo;
-			next();
-		}, function (req, res, next) {
+
 			passport.authenticate(strategy.name, function (err, user) {
 				if (err) {
 					delete req.session.registration;

@@ -3,17 +3,16 @@
 	"bg-color": "Background Colour",
 	"text-color": "Text Colour",
 	"create-modify": "Create & Modify Tags",
-	"description": "Select tags via clicking and/or dragging, use shift to select multiple.",
+	"description": "Select tags by clicking or dragging, use <code>CTRL</code> to select multiple tags.",
 	"create": "Create Tag",
 	"modify": "Modify Tags",
 	"rename": "Rename Tags",
 	"delete": "Delete Selected Tags",
 	"search": "Search for tags...",
-	"settings": "Click <a href=\"%1\">here</a> to visit the tag settings page.",
+	"settings": "Tags Settings",
 	"name": "Tag Name",
 
-	"alerts.editing-multiple": "Editing multiple tags",
-	"alerts.editing-x": "Editing \"%1\" tag",
+	"alerts.editing": "Editing tag(s)",
 	"alerts.confirm-delete": "Do you want to delete the selected tags?",
 	"alerts.update-success": "Tag Updated!"
 }

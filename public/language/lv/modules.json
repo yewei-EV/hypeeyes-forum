@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Sarunāties ar",
     "chat.placeholder": "Šeit ierakstīt sarunu, tad nospiest \"Enter\", lai to nosūtītu",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Nosūtīt",
     "chat.no_active": "Nav aktīvo sarunu.",
     "chat.user_typing": "%1 raksta...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Nesenās sarunas",
     "chat.contacts": "Kontaktpersonas",
     "chat.message-history": "Sarunu vēsture",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Sarunu iestatījumi",
     "chat.pop-out": "Uznirstošā saruna",
     "chat.minimize": "Minimizēt",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Augšupielādēt failu",
     "composer.zen_mode": "Zen režīms",
     "composer.select_category": "Izvēlēties kategoriju",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "Labi",
     "bootbox.cancel": "Atcelt",
     "bootbox.confirm": "Apstiprināt",

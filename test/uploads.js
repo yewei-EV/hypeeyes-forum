@@ -48,9 +48,12 @@ describe('Upload Controllers', function () {
 			cid = results.category.cid;
 
 			topics.post({ uid: adminUid, title: 'test topic title', content: 'test topic content', cid: results.category.cid }, function (err, result) {
+				if (err) {
+					return done(err);
+				}
 				tid = result.topicData.tid;
 				pid = result.postData.pid;
-				done(err);
+				groups.join('administrators', adminUid, done);
 			});
 		});
 	});
@@ -64,18 +67,7 @@ describe('Upload Controllers', function () {
 				assert.ifError(err);
 				jar = _jar;
 				csrf_token = _csrf_token;
-				privileges.global.give(['upload:post:file'], 'registered-users', done);
-			});
-		});
-
-		it('should upload a profile picture', function (done) {
-			helpers.uploadFile(nconf.get('url') + '/api/user/regular/uploadpicture', path.join(__dirname, '../test/files/test.png'), {}, jar, csrf_token, function (err, res, body) {
-				assert.ifError(err);
-				assert.equal(res.statusCode, 200);
-				assert(Array.isArray(body));
-				assert.equal(body.length, 1);
-				assert.equal(body[0].url, '/assets/uploads/profile/' + regularUid + '-profileavatar.png');
-				done();
+				privileges.global.give(['groups:upload:post:file'], 'registered-users', done);
 			});
 		});
 
@@ -107,6 +99,20 @@ describe('Upload Controllers', function () {
 			});
 		});
 
+		it('should not allow deleting if path is not correct', function (done) {
+			socketUser.deleteUpload({ uid: adminUid }, { uid: regularUid, name: '../../bkconfig.json' }, function (err) {
+				assert.equal(err.message, '[[error:invalid-path]]');
+				done();
+			});
+		});
+
+		it('should not allow deleting if path is not correct', function (done) {
+			socketUser.deleteUpload({ uid: adminUid }, { uid: regularUid, name: '/files/../../bkconfig.json' }, function (err) {
+				assert.equal(err.message, '[[error:invalid-path]]');
+				done();
+			});
+		});
+
 		it('should resize and upload an image to a post', function (done) {
 			var oldValue = meta.config.resizeImageWidth;
 			meta.config.resizeImageWidth = 10;
@@ -125,7 +131,6 @@ describe('Upload Controllers', function () {
 
 
 		it('should upload a file to a post', function (done) {
-			meta.config.allowFileUploads = 1;
 			var oldValue = meta.config.allowedFileExtensions;
 			meta.config.allowedFileExtensions = 'png,jpg,bmp,html';
 			helpers.uploadFile(nconf.get('url') + '/api/post/upload', path.join(__dirname, '../test/files/503.html'), {}, jar, csrf_token, function (err, res, body) {
@@ -157,7 +162,7 @@ describe('Upload Controllers', function () {
 		});
 
 		it('should fail if file is not an image', function (done) {
-			file.isFileTypeAllowed(path.join(__dirname, '../test/files/notanimage.png'), function (err) {
+			image.isFileTypeAllowed(path.join(__dirname, '../test/files/notanimage.png'), function (err) {
 				assert.equal(err.message, 'Input file contains unsupported image format');
 				done();
 			});
@@ -216,6 +221,13 @@ describe('Upload Controllers', function () {
 		});
 
 		it('should not allow non image uploads', function (done) {
+			socketUser.updateCover({ uid: 1 }, { uid: 1, file: { path: '../../text.txt' } }, function (err) {
+				assert.equal(err.message, '[[error:invalid-data]]');
+				done();
+			});
+		});
+
+		it('should not allow non image uploads', function (done) {
 			socketUser.updateCover({ uid: 1 }, { uid: 1, imageData: 'data:text/html;base64,PHN2Zy9vbmxvYWQ9YWxlcnQoMik+' }, function (err) {
 				assert.equal(err.message, '[[error:invalid-image]]');
 				done();
@@ -225,6 +237,13 @@ describe('Upload Controllers', function () {
 		it('should not allow svg uploads', function (done) {
 			socketUser.updateCover({ uid: 1 }, { uid: 1, imageData: 'data:image/svg;base64,PHN2Zy9vbmxvYWQ9YWxlcnQoMik+' }, function (err) {
 				assert.equal(err.message, '[[error:invalid-image]]');
+				done();
+			});
+		});
+
+		it('should not allow non image uploads', function (done) {
+			socketUser.uploadCroppedPicture({ uid: 1 }, { uid: 1, file: { path: '../../text.txt' } }, function (err) {
+				assert.equal(err.message, '[[error:invalid-data]]');
 				done();
 			});
 		});
@@ -288,7 +307,7 @@ describe('Upload Controllers', function () {
 				assert.ifError(err);
 				jar = _jar;
 				csrf_token = _csrf_token;
-				groups.join('administrators', adminUid, done);
+				done();
 			});
 		});
 
@@ -389,6 +408,34 @@ describe('Upload Controllers', function () {
 					assert(body);
 					done();
 				});
+			});
+		});
+
+		it('should upload regular file', function (done) {
+			helpers.uploadFile(nconf.get('url') + '/api/admin/upload/file', path.join(__dirname, '../test/files/test.png'), {
+				params: JSON.stringify({
+					folder: 'system',
+				}),
+			}, jar, csrf_token, function (err, res, body) {
+				assert.ifError(err);
+				assert.equal(res.statusCode, 200);
+				assert(Array.isArray(body));
+				assert.equal(body[0].url, '/assets/uploads/system/test.png');
+				assert(file.existsSync(path.join(nconf.get('upload_path'), 'system', 'test.png')));
+				done();
+			});
+		});
+
+		it('should fail to upload regular file in wrong directory', function (done) {
+			helpers.uploadFile(nconf.get('url') + '/api/admin/upload/file', path.join(__dirname, '../test/files/test.png'), {
+				params: JSON.stringify({
+					folder: '../../system',
+				}),
+			}, jar, csrf_token, function (err, res, body) {
+				assert.ifError(err);
+				assert.equal(res.statusCode, 500);
+				assert.strictEqual(body.error, '[[error:invalid-path]]');
+				done();
 			});
 		});
 	});

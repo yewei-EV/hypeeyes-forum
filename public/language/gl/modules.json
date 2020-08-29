@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Chat with",
     "chat.placeholder": "Escribe aquí a mensaxe, pulsa intro para enviar",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Enviar",
     "chat.no_active": "Non tes charlas activas.",
     "chat.user_typing": "%1 está a escribir...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Charlas Recentes",
     "chat.contacts": "Contactos",
     "chat.message-history": "Historial de mensaxes",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Marchar do chat",
     "chat.minimize": "Minimize",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Subir arquivo",
     "composer.zen_mode": "Modo Zen",
     "composer.select_category": "Selecciona unha categoría",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "De acordo",
     "bootbox.cancel": "Cancelar",
     "bootbox.confirm": "Confirmar",

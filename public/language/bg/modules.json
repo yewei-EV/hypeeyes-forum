@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Разговор с",
     "chat.placeholder": "Въведете съобщението тук и натиснете Ентер за изпращане",
+    "chat.scroll-up-alert": "В момента разглеждате по-стари съобщения. Щракнете тук, за да се прехвърлите към най-новото съобщение.",
     "chat.send": "Изпращане",
     "chat.no_active": "Нямате текущи разговори.",
     "chat.user_typing": "%1 пише...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Скорошни разговори",
     "chat.contacts": "Контакти",
     "chat.message-history": "История на съобщенията",
+    "chat.message-deleted": "Съобщението е изтрито",
     "chat.options": "Настройки на разговора",
     "chat.pop-out": "Отделяне на разговора в прозорец",
     "chat.minimize": "Намаляване",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Качване на файл",
     "composer.zen_mode": "Режим Дзен",
     "composer.select_category": "Изберете категория",
+    "composer.textarea.placeholder": "Въведете съдържанието на публикацията си тук. Можете също да влачите и пускате снимки.",
     "bootbox.ok": "Добре",
     "bootbox.cancel": "Отказ",
     "bootbox.confirm": "Потвърждаване",

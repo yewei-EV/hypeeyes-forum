@@ -22,6 +22,10 @@ SocketGroups.join = async (socket, data) => {
 		throw new Error('[[error:invalid-uid]]');
 	}
 
+	if (typeof data.groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
+
 	if (data.groupName === 'administrators' || groups.isPrivilegeGroup(data.groupName)) {
 		throw new Error('[[error:not-allowed]]');
 	}
@@ -66,6 +70,10 @@ SocketGroups.leave = async (socket, data) => {
 		throw new Error('[[error:invalid-uid]]');
 	}
 
+	if (typeof data.groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
+
 	if (data.groupName === 'administrators') {
 		throw new Error('[[error:cant-remove-self-as-admin]]');
 	}
@@ -96,14 +104,28 @@ SocketGroups.addMember = async (socket, data) => {
 	if (data.groupName === 'administrators' || groups.isPrivilegeGroup(data.groupName)) {
 		throw new Error('[[error:not-allowed]]');
 	}
-	await groups.join(data.groupName, data.uid);
+	if (!data.uid) {
+		throw new Error('[[error:invalid-data]]');
+	}
+	data.uid = !Array.isArray(data.uid) ? [data.uid] : data.uid;
+	if (data.uid.filter(uid => !(parseInt(uid, 10) > 0)).length) {
+		throw new Error('[[error:invalid-uid]]');
+	}
+	for (const uid of data.uid) {
+		// eslint-disable-next-line no-await-in-loop
+		await groups.join(data.groupName, uid);
+	}
+
 	logGroupEvent(socket, 'group-add-member', {
 		groupName: data.groupName,
-		targetUid: data.uid,
+		targetUid: String(data.uid),
 	});
 };
 
 async function isOwner(socket, data) {
+	if (typeof data.groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
 	const results = await utils.promiseParallel({
 		isAdmin: await user.isAdministrator(socket.uid),
 		isGlobalModerator: await user.isGlobalModerator(socket.uid),
@@ -118,6 +140,9 @@ async function isOwner(socket, data) {
 }
 
 async function isInvited(socket, data) {
+	if (typeof data.groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
 	const invited = await groups.isInvited(socket.uid, data.groupName);
 	if (!invited) {
 		throw new Error('[[error:not-invited]]');
@@ -171,6 +196,9 @@ SocketGroups.rejectAll = async (socket, data) => {
 };
 
 async function acceptRejectAll(method, socket, data) {
+	if (typeof data.groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
 	const uids = await groups.getPending(data.groupName);
 	await Promise.all(uids.map(async (uid) => {
 		await method(socket, { groupName: data.groupName, toUid: uid });
@@ -251,7 +279,7 @@ SocketGroups.kick = async (socket, data) => {
 SocketGroups.create = async (socket, data) => {
 	if (!socket.uid) {
 		throw new Error('[[error:no-privileges]]');
-	} else if (groups.isPrivilegeGroup(data.name)) {
+	} else if (typeof data.name !== 'string' || groups.isPrivilegeGroup(data.name)) {
 		throw new Error('[[error:invalid-group-name]]');
 	}
 
@@ -260,6 +288,7 @@ SocketGroups.create = async (socket, data) => {
 		throw new Error('[[error:no-privileges]]');
 	}
 	data.ownerUid = socket.uid;
+	data.system = false;
 	const groupData = await groups.create(data);
 	logGroupEvent(socket, 'group-create', {
 		groupName: data.name,
@@ -291,7 +320,7 @@ SocketGroups.search = async (socket, data) => {
 		const groupData = await groups.getGroupsBySort(data.options.sort, 0, groupsPerPage - 1);
 		return groupData;
 	}
-
+	data.options.filterHidden = data.options.filterHidden || !await user.isAdministrator(socket.uid);
 	return await groups.search(data.query, data.options);
 };
 
@@ -308,16 +337,39 @@ SocketGroups.loadMore = async (socket, data) => {
 };
 
 SocketGroups.searchMembers = async (socket, data) => {
-	data.uid = socket.uid;
-	return await groups.searchMembers(data);
+	const [isOwner, isMember, isAdmin] = await Promise.all([
+		groups.ownership.isOwner(socket.uid, data.groupName),
+		groups.isMember(socket.uid, data.groupName),
+		user.isAdministrator(socket.uid),
+	]);
+	if (!isOwner && !isMember && !isAdmin) {
+		throw new Error('[[error:no-privileges]]');
+	}
+	return await groups.searchMembers({
+		uid: socket.uid,
+		query: data.query,
+		groupName: data.groupName,
+	});
 };
 
 SocketGroups.loadMoreMembers = async (socket, data) => {
 	if (!data.groupName || !utils.isNumber(data.after) || parseInt(data.after, 10) < 0) {
 		throw new Error('[[error:invalid-data]]');
 	}
+	const [isHidden, isAdmin, isGlobalMod] = await Promise.all([
+		groups.isHidden(data.groupName),
+		user.isAdministrator(socket.uid),
+		user.isGlobalModerator(socket.uid),
+	]);
+	if (isHidden && !isAdmin && !isGlobalMod) {
+		const isMember = await groups.isMember(socket.uid, data.groupName);
+		if (!isMember) {
+			throw new Error('[[error:no-privileges]]');
+		}
+	}
+
 	data.after = parseInt(data.after, 10);
-	const users = await user.getUsersFromSet('group:' + data.groupName + ':members', socket.uid, data.after, data.after + 9);
+	const users = await groups.getOwnersAndMembers(data.groupName, socket.uid, data.after, data.after + 9);
 	return {
 		users: users,
 		nextStart: data.after + 10,
@@ -330,9 +382,15 @@ SocketGroups.cover.update = async (socket, data) => {
 	if (!socket.uid) {
 		throw new Error('[[error:no-privileges]]');
 	}
-
+	if (data.file || (!data.imageData && !data.position)) {
+		throw new Error('[[error:invalid-data]]');
+	}
 	await canModifyGroup(socket.uid, data.groupName);
-	return await groups.updateCover(socket.uid, data);
+	return await groups.updateCover(socket.uid, {
+		groupName: data.groupName,
+		imageData: data.imageData,
+		position: data.position,
+	});
 };
 
 SocketGroups.cover.remove = async (socket, data) => {
@@ -341,16 +399,23 @@ SocketGroups.cover.remove = async (socket, data) => {
 	}
 
 	await canModifyGroup(socket.uid, data.groupName);
-	await groups.removeCover(data);
+	await groups.removeCover({
+		groupName: data.groupName,
+	});
 };
 
 async function canModifyGroup(uid, groupName) {
+	if (typeof groupName !== 'string') {
+		throw new Error('[[error:invalid-group-name]]');
+	}
 	const results = await utils.promiseParallel({
 		isOwner: groups.ownership.isOwner(uid, groupName),
-		isAdminOrGlobalMod: user.isAdminOrGlobalMod(uid),
+		system: groups.getGroupField(groupName, 'system'),
+		isAdmin: user.isAdministrator(uid),
+		isGlobalMod: user.isGlobalModerator(uid),
 	});
 
-	if (!results.isOwner && !results.isAdminOrGlobalMod) {
+	if (!(results.isOwner || results.isAdmin || (results.isGlobalMod && !results.system))) {
 		throw new Error('[[error:no-privileges]]');
 	}
 }

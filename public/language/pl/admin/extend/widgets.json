@@ -1,7 +1,7 @@
 {
 	"available": "Dostępne Widgety",
 	"explanation": "Wybierz widget z menu rozwijalnego i przeciągnij go na wybrane pole z lewej strony.",
-	"none-installed": "Nie odnaleziono widgetów! Aktywuj wtyczkę „essential widgets” w panelu sterowania <a href=\"%1\">wtyczek</a>.",
+	"none-installed": "Nie odnaleziono widgetów! Aktywuj wtyczkę „widget essentials w panelu sterowania <a href=\"%1\">wtyczek</a>.",
 	"clone-from": "Sklonuj widget z",
 	"containers.available": "Dostępne kontenery",
 	"containers.explanation": "Przeciągnij i upuść na dowolnym, aktywnym widżecie",
@@ -20,11 +20,11 @@
 
 	"error.select-clone": "Proszę wybrać stronę do sklonowania",
 
-	"title": "Title",
-	"title.placeholder": "Title (only shown on some containers)",
-	"container": "Container",
-	"container.placeholder": "Drag and drop a container or enter HTML here.",
-	"show-to-groups": "Show to groups",
-	"hide-from-groups": "Hide from groups",
-	"hide-on-mobile": "Hide on mobile"
+	"title": "Tytuł",
+	"title.placeholder": "Tytuł (wyświetlany tylko w niektórych kontenerach)",
+	"container": "Kontener",
+	"container.placeholder": "Przeciągnij i upuść kontener lub wpisz tutaj HTML.",
+	"show-to-groups": "Pokaż dla grup",
+	"hide-from-groups": "Ukryj dla grup",
+	"hide-on-mobile": "Ukraj na urządzeniach mobilnych"
 }

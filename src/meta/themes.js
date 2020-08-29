@@ -4,17 +4,11 @@ const path = require('path');
 const nconf = require('nconf');
 const winston = require('winston');
 const _ = require('lodash');
-
-const util = require('util');
 const fs = require('fs');
-const fsReaddir = util.promisify(fs.readdir);
-const fsStat = util.promisify(fs.stat);
-const fsReadfile = util.promisify(fs.readFile);
-
 
 const file = require('../file');
 const db = require('../database');
-const Meta = require('../meta');
+const Meta = require('./index');
 const events = require('../events');
 const utils = require('../../public/src/utils');
 
@@ -33,7 +27,7 @@ Themes.get = async () => {
 	themes = await Promise.all(themes.map(async (theme) => {
 		const config = path.join(themePath, theme, 'theme.json');
 		try {
-			const file = await fsReadfile(config, 'utf8');
+			const file = await fs.promises.readFile(config, 'utf8');
 			const configObj = JSON.parse(file);
 
 			// Minor adjustments for API output
@@ -59,12 +53,12 @@ Themes.get = async () => {
 };
 
 async function getThemes(themePath) {
-	let dirs = await fsReaddir(themePath);
+	let dirs = await fs.promises.readdir(themePath);
 	dirs = dirs.filter(dir => themeNamePattern.test(dir) || dir.startsWith('@'));
 	return await Promise.all(dirs.map(async (dir) => {
 		try {
 			const dirpath = path.join(themePath, dir);
-			const stat = await fsStat(dirpath);
+			const stat = await fs.promises.stat(dirpath);
 			if (!stat.isDirectory()) {
 				return false;
 			}
@@ -87,44 +81,49 @@ async function getThemes(themePath) {
 
 Themes.set = async (data) => {
 	switch (data.type) {
-	case 'local': {
-		const current = await Meta.configs.get('theme:id');
-		if (current !== data.id) {
-			let config = await fsReadfile(path.join(nconf.get('themes_path'), data.id, 'theme.json'), 'utf8');
-			config = JSON.parse(config);
+		case 'local': {
+			const current = await Meta.configs.get('theme:id');
+			if (current !== data.id) {
+				const pathToThemeJson = path.join(nconf.get('themes_path'), data.id, 'theme.json');
+				if (!pathToThemeJson.startsWith(nconf.get('themes_path'))) {
+					throw new Error('[[error:invalid-theme-id]]');
+				}
 
-			await db.sortedSetRemove('plugins:active', current);
-			const numPlugins = await db.sortedSetCard('plugins:active');
-			await db.sortedSetAdd('plugins:active', numPlugins, data.id);
-			// Re-set the themes path (for when NodeBB is reloaded)
-			Themes.setPath(config);
+				let config = await fs.promises.readFile(pathToThemeJson, 'utf8');
+				config = JSON.parse(config);
 
-			await Meta.configs.setMultiple({
-				'theme:type': data.type,
-				'theme:id': data.id,
-				'theme:staticDir': config.staticDir ? config.staticDir : '',
-				'theme:templates': config.templates ? config.templates : '',
-				'theme:src': '',
-				bootswatchSkin: '',
-			});
+				await db.sortedSetRemove('plugins:active', current);
+				const numPlugins = await db.sortedSetCard('plugins:active');
+				await db.sortedSetAdd('plugins:active', numPlugins, data.id);
+				// Re-set the themes path (for when NodeBB is reloaded)
+				Themes.setPath(config);
 
-			await events.log({
-				type: 'theme-set',
-				uid: parseInt(data.uid, 10) || 0,
-				ip: data.ip || '127.0.0.1',
-				text: data.id,
-			});
+				await Meta.configs.setMultiple({
+					'theme:type': data.type,
+					'theme:id': data.id,
+					'theme:staticDir': config.staticDir ? config.staticDir : '',
+					'theme:templates': config.templates ? config.templates : '',
+					'theme:src': '',
+					bootswatchSkin: '',
+				});
 
-			Meta.reloadRequired = true;
+				await events.log({
+					type: 'theme-set',
+					uid: parseInt(data.uid, 10) || 0,
+					ip: data.ip || '127.0.0.1',
+					text: data.id,
+				});
+
+				Meta.reloadRequired = true;
+			}
+			break;
 		}
-		break;
-	}
-	case 'bootswatch':
-		await Meta.configs.setMultiple({
-			'theme:src': data.src,
-			bootswatchSkin: data.id.toLowerCase(),
-		});
-		break;
+		case 'bootswatch':
+			await Meta.configs.setMultiple({
+				'theme:src': data.src,
+				bootswatchSkin: data.id.toLowerCase(),
+			});
+			break;
 	}
 };
 

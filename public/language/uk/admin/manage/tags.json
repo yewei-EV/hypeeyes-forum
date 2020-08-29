@@ -3,17 +3,16 @@
 	"bg-color": "Колір фону",
 	"text-color": "Колір тексту",
 	"create-modify": "Створити та змінити теги",
-	"description": "Виберіть теги тиснучи або перетягуючи. Використовуйте Shift, щоб обрати декілька.",
+	"description": "Select tags by clicking or dragging, use <code>CTRL</code> to select multiple tags.",
 	"create": "Створити тег",
 	"modify": "Змінити тег",
 	"rename": "Перейменувати теги",
 	"delete": "Видалити вибрані теги",
 	"search": "Пошук тегів...",
-	"settings": "Натисніть <a href=\"%1\">тут</a> щоб перейти на сторінку налаштування тегів.",
+	"settings": "Tags Settings",
 	"name": "Назва тегу",
 
-	"alerts.editing-multiple": "Редагування декількох тегів",
-	"alerts.editing-x": "Редагування тегу \"%1\"",
+	"alerts.editing": "Editing tag(s)",
 	"alerts.confirm-delete": "Бажаєте видалити декілька тегів?",
 	"alerts.update-success": "Тег оновлено!"
 }

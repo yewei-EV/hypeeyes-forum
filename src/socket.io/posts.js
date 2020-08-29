@@ -74,9 +74,9 @@ SocketPosts.getTimestampByIndex = async function (socket, data) {
 	}
 	let pid;
 	if (data.index === 0) {
-		pid = topics.getTopicField(data.tid, 'mainPid');
+		pid = await topics.getTopicField(data.tid, 'mainPid');
 	} else {
-		pid = db.getSortedSetRange('tid:' + data.tid + ':posts', data.index - 1, data.index - 1);
+		pid = await db.getSortedSetRange('tid:' + data.tid + ':posts', data.index - 1, data.index - 1);
 	}
 	pid = Array.isArray(pid) ? pid[0] : pid;
 	if (!pid) {
@@ -166,7 +166,7 @@ SocketPosts.reject = async function (socket, data) {
 };
 
 async function acceptOrReject(method, socket, data) {
-	const canEditQueue = await posts.canEditQueue(socket.uid, data.id);
+	const canEditQueue = await posts.canEditQueue(socket.uid, data);
 	if (!canEditQueue) {
 		throw new Error('[[error:no-privileges]]');
 	}
@@ -174,11 +174,14 @@ async function acceptOrReject(method, socket, data) {
 }
 
 SocketPosts.editQueuedContent = async function (socket, data) {
-	if (!data || !data.id || !data.content) {
+	if (!data || !data.id || (!data.content && !data.title && !data.cid)) {
 		throw new Error('[[error:invalid-data]]');
 	}
-	await posts.editQueuedContent(socket.uid, data.id, data.content);
-	return await plugins.fireHook('filter:parse.post', { postData: data });
+	await posts.editQueuedContent(socket.uid, data);
+	if (data.content) {
+		return await plugins.fireHook('filter:parse.post', { postData: data });
+	}
+	return { postData: data };
 };
 
 require('../promisify')(SocketPosts);

@@ -7,14 +7,17 @@
 	"send-validation-email": "Envoyer un e-mail de vérification",
 	"password-reset-email": "Envoyer un e-mail de réinitialisation du mot de passe",
 	"force-password-reset": "Forcer la réinitialisation du mot de passe et déconnecter l'utilisateur",
-	"ban": "Bannir les utilisateurs",
-	"temp-ban": "Bannir temporairement les utilisateurs",
-	"unban": "Dé-bannir les utilisateurs",
+	"ban": "Utilisateur(s) banni(s)",
+	"temp-ban": "Utilisateur(s) temporairement banni(s)",
+	"unban": "Dé-bannir le(s) utilisateur(s)",
 	"reset-lockout": "Supprimer le blocage",
 	"reset-flags": "Supprimer les signalements",
-	"delete": "Supprimer les utilisateurs",
-	"purge": "Supprimer les utilisateurs ainsi que leurs contenus",
+	"delete": "Supprimer <strong>le(s) utilisateur(s)</strong>",
+	"delete-content": "Supprimer <strong>le contenu</strong> du compte",
+	"purge": "Supprimer <strong>le(s) compte(s)</strong> et <strong>le contenu</strong>",
 	"download-csv": "Télécharger au format CSV",
+	"manage-groups": "Gérer les groupes",
+	"add-group": "Ajouter un groupe",
 	"invite": "Inviter",
 	"new": "Nouvel utilisateur",
 
@@ -91,9 +94,11 @@
 	"alerts.validate-email-success": "Adresse e-mail vérifiée",
 	"alerts.validate-force-password-reset-success": "Les mots de passe des utilisateurs ont été réinitialisés et leurs sessions existantes ont été révoquées.",
 	"alerts.password-reset-confirm": "Voulez-vous réellement envoyer un e-mail de réinitialisation de mot de passe à ces utilisateurs ?",
-	"alerts.confirm-delete": "<b>Attention !</b><br/>Voulez-vous réellement supprimer ces utilisateurs ?<br/> Cette action est irréversible ! Seuls les comptes des= ce utilisateurs seront supprimés, leurs sujets et messages resteront. ",
+	"alerts.confirm-delete": "<strong>Attention !</strong><p>Voulez-vous réellement supprimer <strong>le(s) utilisateur(s)</strong> ?</p><p> Cette action est irréversible ! Toutes les données de ces utilisateurs seront effacées !</p>",
 	"alerts.delete-success": "Utilisateur(s) supprimé(s) !",
-	"alerts.confirm-purge": "<b>Attention !</b><br/>Voulez-vous réellement supprimer ces utilisateurs ainsi que leurs contenus ?<br/> Cette action est irréversible ! Toutes les données de ces utilisateurs seront effacées !",
+	"alerts.confirm-delete-content": "<strong>Attention !</strong><p>Voulez-vous réellement supprimer <strong>le contenu de ces utilisateurs</strong> ?</p><p> Cette action est irréversible ! Toutes les données de ces utilisateurs seront effacées !</p>",
+	"alerts.delete-content-success": "Contenu utilisateur(s) supprimé(s) !",
+	"alerts.confirm-purge": "<strong>Attention !</strong><p>Voulez-vous réellement supprimer <strong>ces utilisateurs ainsi que leurs contenus</strong> ?</p><p> Cette action est irréversible ! Toutes les données de ces utilisateurs seront effacées !</p>",
 	"alerts.create": "Créer un utilisateur",
 	"alerts.button-create": "Créer",
 	"alerts.button-cancel": "Annuler",
@@ -103,5 +108,5 @@
 
 	"alerts.prompt-email": "Emails: ",
 	"alerts.email-sent-to": "Un e-mail d'invitation a été envoyé à %1",
-	"alerts.x-users-found": "%1 utilisateur(s) trouvé(s) ! La recherche a pris %2 ms."
+	"alerts.x-users-found": "%1 utilisateur(s) trouvé(s), (%2 secondes)"
 }

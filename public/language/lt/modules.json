@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Chat with",
     "chat.placeholder": "Įrašykite žinutę čia ir spauskite \"enter\" norėdami išsiųsti",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Siųsti",
     "chat.no_active": "Jūs neturite aktyvių susirašinėjimų.",
     "chat.user_typing": "%1 dabar rašo...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Paskutiniai susirašinėjimai",
     "chat.contacts": "Kontaktai",
     "chat.message-history": "Žinučių istorija",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Iššokančio lango pokalbiai",
     "chat.minimize": "Minimize",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Upload File",
     "composer.zen_mode": "Zen Mode",
     "composer.select_category": "Select a category",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Cancel",
     "bootbox.confirm": "Confirm",

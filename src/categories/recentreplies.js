@@ -1,13 +1,14 @@
 
 'use strict';
 
-var _ = require('lodash');
+const _ = require('lodash');
 
-var db = require('../database');
-var posts = require('../posts');
-var topics = require('../topics');
-var privileges = require('../privileges');
-var batch = require('../batch');
+const db = require('../database');
+const posts = require('../posts');
+const topics = require('../topics');
+const privileges = require('../privileges');
+const plugins = require('../plugins');
+const batch = require('../batch');
 
 module.exports = function (Categories) {
 	Categories.getRecentReplies = async function (cid, uid, count) {
@@ -25,15 +26,17 @@ module.exports = function (Categories) {
 			db.getObjectField('category:' + cid, 'numRecentReplies'),
 		]);
 
-		if (count < numRecentReplies) {
-			return await db.sortedSetAdd('cid:' + cid + ':recent_tids', Date.now(), tid);
+		if (count >= numRecentReplies) {
+			const data = await db.getSortedSetRangeWithScores('cid:' + cid + ':recent_tids', 0, count - numRecentReplies);
+			const shouldRemove = !(data.length === 1 && count === 1 && data[0].value === String(tid));
+			if (data.length && shouldRemove) {
+				await db.sortedSetsRemoveRangeByScore(['cid:' + cid + ':recent_tids'], '-inf', data[data.length - 1].score);
+			}
 		}
-		const data = await db.getSortedSetRangeWithScores('cid:' + cid + ':recent_tids', 0, count - numRecentReplies);
-		const shouldRemove = !(data.length === 1 && count === 1 && data[0].value === String(tid));
-		if (data.length && shouldRemove) {
-			await db.sortedSetsRemoveRangeByScore(['cid:' + cid + ':recent_tids'], '-inf', data[data.length - 1].score);
+		if (numRecentReplies > 0) {
+			await db.sortedSetAdd('cid:' + cid + ':recent_tids', Date.now(), tid);
 		}
-		await db.sortedSetAdd('cid:' + cid + ':recent_tids', Date.now(), tid);
+		await plugins.fireHook('action:categories.updateRecentTid', { cid: cid, tid: tid });
 	};
 
 	Categories.updateRecentTidForCid = async function (cid) {
@@ -59,12 +62,24 @@ module.exports = function (Categories) {
 		}
 	};
 
-	Categories.getRecentTopicReplies = async function (categoryData, uid) {
+	Categories.getRecentTopicReplies = async function (categoryData, uid, query) {
 		if (!Array.isArray(categoryData) || !categoryData.length) {
 			return;
 		}
-		const categoriesToLoad = categoryData.filter(category => category && category.numRecentReplies && parseInt(category.numRecentReplies, 10) > 0);
-		const keys = categoriesToLoad.map(category => 'cid:' + category.cid + ':recent_tids');
+		const categoriesToLoad = categoryData.filter(c => c && c.numRecentReplies && parseInt(c.numRecentReplies, 10) > 0);
+		let keys = [];
+		if (plugins.hasListeners('filter:categories.getRecentTopicReplies')) {
+			const result = await plugins.fireHook('filter:categories.getRecentTopicReplies', {
+				categories: categoriesToLoad,
+				uid: uid,
+				query: query,
+				keys: [],
+			});
+			keys = result.keys;
+		} else {
+			keys = categoriesToLoad.map(c => 'cid:' + c.cid + ':recent_tids');
+		}
+
 		const results = await db.getSortedSetsMembers(keys);
 		let tids = _.uniq(_.flatten(results).filter(Boolean));
 

@@ -1,25 +1,28 @@
+<div class="row">
+	<div class="col-lg-3 pull-right">
+		<div class="input-group">
+			<input type="text" class="form-control" placeholder="[[admin/manage/groups:search-placeholder]]" id="group-search">
+			<span class="input-group-addon search-button"><i class="fa fa-search"></i></span>
+		</div>
+	</div>
+</div>
 <div class="row groups">
 	<div class="col-xs-12">
-		<div>
-			<input id="group-search" type="text" class="form-control" placeholder="[[admin/manage/groups:search-placeholder]]" />
-		</div>
-
 		<table class="table table-striped groups-list">
 			<thead>
 				<tr>
 					<th>[[admin/manage/groups:name]]</th>
 					<th>[[admin/manage/groups:badge]]</th>
 					<th>[[admin/manage/groups:properties]]</th>
-					<th class="hidden-xs">[[admin/manage/groups:description]]</th>
-					<th class="hidden-xs text-right">[[admin/manage/groups:member-count]]</th>
 					<th></th>
 				</tr>
 			</thead>
 			<tbody>
 				<!-- BEGIN groups -->
-				<tr data-groupname="{groups.displayName}">
+				<tr data-groupname="{groups.displayName}" data-name-encoded="{groups.nameEncoded}">
 					<td>
-						{groups.displayName}
+						<a href="{config.relative_path}/admin/manage/groups/{groups.nameEncoded}">{groups.displayName}</a> ({groups.memberCount})
+						<p class="description">{groups.description}</p>
 					</td>
 					<td>
 						<span class="label label-default" style="color:{groups.textColor}; background-color: {groups.labelColor};"><!-- IF groups.icon --><i class="fa {groups.icon}"></i> <!-- ENDIF groups.icon -->{groups.userTitle}</span>
@@ -35,19 +38,15 @@
 						<span class="label label-default">[[admin/manage/groups:hidden]]</span>
 						<!-- ENDIF groups.hidden -->
 					</td>
-					<td class="hidden-xs">
-						<p class="description">{groups.description}</p>
-					</td>
-					<td class="hidden-xs text-right">
-						{groups.memberCount}
-					</td>
+
 					<td>
-						<div class="btn-group ">
-							<a href="{config.relative_path}/admin/manage/groups/{groups.nameEncoded}" class="btn btn-default btn-xs">
-								<i class="fa fa-edit"></i> [[admin/manage/groups:edit]]
-							</a>
+						<div class="btn-group">
+							<a href="{config.relative_path}/api/admin/groups/{groups.nameEncoded}/csv" class="btn btn-default">[[admin/manage/groups:download-csv]]</a>
+
+							<!-- IMPORT admin/partials/groups/privileges-select-category.tpl -->
+
 							<!-- IF !groups.system -->
-							<button class="btn btn-danger btn-xs" data-action="delete"><i class="fa fa-times"></i></button>
+							<button class="btn btn-danger" data-action="delete"><i class="fa fa-times"></i></button>
 							<!-- ENDIF !groups.system -->
 						</div>
 					</td>

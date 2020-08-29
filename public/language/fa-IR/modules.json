@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "چت با",
     "chat.placeholder": "پیام گفتگو را اینجا بنویسید، دکمه Enter را بزنید تا فرستاده شود.",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "ارسال",
     "chat.no_active": "شما هیچ گفتگوی فعالی ندارید.",
     "chat.user_typing": "%1 در حال نوشتن است...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "گفتگو های اخیر",
     "chat.contacts": "تماس‌ها",
     "chat.message-history": "تاریخچه پیام‌ها",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "تنظیمات چت",
     "chat.pop-out": "پاپ آپ گفتگو",
     "chat.minimize": "کوچک کردن",
@@ -57,6 +59,7 @@
     "composer.upload-file": "بارگذاری فایل",
     "composer.zen_mode": "حالت ذن",
     "composer.select_category": "یک دسته‌بندی انتخاب کنید",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "باشه",
     "bootbox.cancel": "انصراف",
     "bootbox.confirm": "تایید",

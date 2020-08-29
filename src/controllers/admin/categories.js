@@ -11,7 +11,7 @@ categoriesController.get = async function (req, res, next) {
 	const [categoryData, parent, allCategories] = await Promise.all([
 		categories.getCategories([req.params.category_id], req.uid),
 		categories.getParents([req.params.category_id]),
-		categories.buildForSelectAll(['text', 'value']),
+		categories.buildForSelectAll(),
 	]);
 
 	const category = categoryData[0];
@@ -22,9 +22,10 @@ categoriesController.get = async function (req, res, next) {
 	category.parent = parent[0];
 	allCategories.forEach(function (category) {
 		if (category) {
-			category.selected = parseInt(category.value, 10) === parseInt(req.params.category_id, 10);
+			category.selected = parseInt(category.cid, 10) === parseInt(req.params.category_id, 10);
 		}
 	});
+	const selectedCategory = allCategories.find(c => c.selected);
 
 	const data = await plugins.fireHook('filter:admin.category.get', {
 		req: req,
@@ -38,14 +39,25 @@ categoriesController.get = async function (req, res, next) {
 
 	res.render('admin/manage/category', {
 		category: data.category,
-		allCategories: data.allCategories,
+		categories: data.allCategories,
+		selectedCategory: selectedCategory,
 		customClasses: data.customClasses,
 	});
 };
 
-categoriesController.getAll = function (req, res) {
+categoriesController.getAll = async function (req, res) {
 	// Categories list will be rendered on client side with recursion, etc.
-	res.render('admin/manage/categories', {});
+	const cids = await categories.getAllCidsFromSet('categories:cid');
+	const fields = [
+		'cid', 'name', 'icon', 'parentCid', 'disabled', 'link',
+		'color', 'bgColor', 'backgroundImage', 'imageClass',
+	];
+	const categoriesData = await categories.getCategoriesFields(cids, fields);
+	const result = await plugins.fireHook('filter:admin.categories.get', { categories: categoriesData, fields: fields });
+	const tree = categories.getTree(result.categories, 0);
+	res.render('admin/manage/categories', {
+		categories: tree,
+	});
 };
 
 categoriesController.getAnalytics = async function (req, res) {

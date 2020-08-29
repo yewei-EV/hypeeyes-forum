@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "คุยกับ",
     "chat.placeholder": "พิมพ์ข้อความแชทที่นี่ กด enter เพื่อส่ง",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "ส่ง",
     "chat.no_active": "คุณไม่มีแชทที่คุยอยู่",
     "chat.user_typing": "%1 กำลังพิมพ์อยู่ ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "แชทล่าสุด",
     "chat.contacts": "ติดต่อ",
     "chat.message-history": "ประวัติข้อความ",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "ตัวเลือกแชท",
     "chat.pop-out": "Pop out แชท",
     "chat.minimize": "ย่อเล็กสุด",
@@ -57,6 +59,7 @@
     "composer.upload-file": "อัพโหลดไฟล์",
     "composer.zen_mode": "เซ็นโหมด",
     "composer.select_category": "เลือกหมวดหมู่",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "ตกลง",
     "bootbox.cancel": "ยกเลิก",
     "bootbox.confirm": "ยืนยัน",

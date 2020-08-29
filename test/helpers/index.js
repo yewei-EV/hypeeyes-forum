@@ -66,8 +66,9 @@ helpers.logoutUser = function (jar, callback) {
 
 helpers.connectSocketIO = function (res, callback) {
 	var io = require('socket.io-client');
-
-	var cookie = res.headers['set-cookie'][0].split(';')[0];
+	let cookies = res.headers['set-cookie'];
+	cookies = cookies.filter(c => /express.sid=[^;]+;/.test(c));
+	const cookie = cookies[0];
 	var socket = io(nconf.get('base_url'), {
 		path: nconf.get('relative_path') + '/socket.io',
 		extraHeaders: {
@@ -106,7 +107,7 @@ helpers.uploadFile = function (uploadEndPoint, filePath, body, jar, csrf_token, 
 			return callback(err);
 		}
 		if (res.statusCode !== 200) {
-			winston.error(body);
+			winston.error(JSON.stringify(body));
 		}
 		callback(null, res, body);
 	});

@@ -1,8 +1,7 @@
 {
 	"state": "状态",
-	"reporter": "举报人",
-	"reported-at": "举报于",
-	"description": "描述",
+	"reports": "报告",
+	"first-reported": "首次报告",
 	"no-flags": "啊哈！没发现任何的举报。",
 	"assignee": "受委托人",
 	"update": "更新",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "委托给我",
 	"filter-cid-all": "全部版块",
 	"apply-filters": "应用过滤器",
+	"more-filters": "更多过滤器",
 
-	"quick-links": "快速链接",
+	"quick-actions": "快速操作",
 	"flagged-user": "被举报的用户",
 	"view-profile": "查看个人资料",
 	"start-new-chat": "开始新会话",
 	"go-to-target": "查看举报目标",
+	"assign-to-me": "指派给我",
+	"delete-post": "删除帖子",
+	"purge-post": "清除帖子",
+	"restore-post": "恢复帖子",
 
 	"user-view": "查看资料",
 	"user-edit": "编辑资料",
@@ -39,9 +43,11 @@
 	"notes": "举报备注",
 	"add-note": "添加备注",
 	"no-notes": "没有共享的备注内容。",
+	"delete-note-confirm": "您确定要删除此举报备注吗？",
+	"note-added": "备注已添加",
+	"note-deleted": "备注已删除",
 
-	"history": "举报历史",
-	"back": "返回举报列表",
+	"history": "账号 &amp; 举报历史",
 	"no-history": "没有举报历史。",
 
 	"state-all": "所有状态",
@@ -50,7 +56,11 @@
 	"state-resolved": "已解决",
 	"state-rejected": "已拒绝",
 	"no-assignee": "未指派",
-	"note-added": "备注已添加",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "举报不适内容",
 	"modal-body": "请选择或者输入您举报 %1%2 的原因以便版主进行审核。",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "已举报此内容。",
 	"modal-submit-confirm": "确认提交",
 	"modal-submit-confirm-text": "您已经指定了一个自定义原因。 您希望通过快速报告提交吗？",
-	"modal-submit-confirm-text-help": "提交快速报告将覆盖任何已定义的自定义原因。"
+	"modal-submit-confirm-text-help": "提交快速报告将覆盖任何已定义的自定义原因。",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

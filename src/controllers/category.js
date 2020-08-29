@@ -39,7 +39,7 @@ categoryController.get = async function (req, res, next) {
 	}
 
 	if (!res.locals.isAPI && (!req.params.slug || categoryFields.slug !== cid + '/' + req.params.slug) && (categoryFields.slug && categoryFields.slug !== cid + '/')) {
-		return helpers.redirect(res, '/category/' + categoryFields.slug);
+		return helpers.redirect(res, '/category/' + categoryFields.slug, true);
 	}
 
 	const topicCount = categoryFields.topic_count;
@@ -88,13 +88,14 @@ categoryController.get = async function (req, res, next) {
 	if (categoryData.children.length) {
 		const allCategories = [];
 		categories.flattenCategories(allCategories, categoryData.children);
-		await categories.getRecentTopicReplies(allCategories, req.uid);
+		await categories.getRecentTopicReplies(allCategories, req.uid, req.query);
 	}
 
 	categoryData.title = translator.escape(categoryData.name);
 	categoryData.description = translator.escape(categoryData.description);
 	categoryData.privileges = userPrivileges;
 	categoryData.showSelect = userPrivileges.editable;
+	categoryData.showTopicTools = userPrivileges.editable;
 	categoryData.rssFeedUrl = nconf.get('url') + '/category/' + categoryData.cid + '.rss';
 	if (parseInt(req.uid, 10)) {
 		categories.markAsRead([cid], req.uid);
@@ -103,7 +104,7 @@ categoryController.get = async function (req, res, next) {
 
 	addTags(categoryData, res);
 
-	categoryData['feeds:disableRSS'] = meta.config['feeds:disableRSS'];
+	categoryData['feeds:disableRSS'] = meta.config['feeds:disableRSS'] || 0;
 	categoryData['reputation:disabled'] = meta.config['reputation:disabled'];
 	pageCount = Math.max(1, Math.ceil(categoryData.topic_count / userSettings.topicsPerPage));
 	categoryData.pagination = pagination.create(currentPage, pageCount, req.query);
@@ -122,6 +123,7 @@ async function buildBreadcrumbs(req, categoryData) {
 		{
 			text: categoryData.name,
 			url: nconf.get('relative_path') + '/category/' + categoryData.slug,
+			cid: categoryData.cid,
 		},
 	];
 	const crumbs = await helpers.buildCategoryBreadcrumbs(categoryData.parentCid);

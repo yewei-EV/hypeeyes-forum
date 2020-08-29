@@ -1,8 +1,7 @@
 {
 	"state": "Estado",
-	"reporter": "Reportado por",
-	"reported-at": "Reportado Em",
-	"description": "Descrição",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Ihuul! Nenhuma sinalização encontrada.",
 	"assignee": "Responsável",
 	"update": "Atualizar",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Atribuído a mim",
 	"filter-cid-all": "Todas as categorias",
 	"apply-filters": "Aplicar Filtros",
+	"more-filters": "More Filters",
 
-	"quick-links": "Links Rápidos",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "Usuário Sinalizado",
 	"view-profile": "Ver Perfil",
 	"start-new-chat": "Iniciar Novo Chat",
 	"go-to-target": "Ver o Sinalizado",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "Ver Perfil",
 	"user-edit": "Editar Perfil",
@@ -39,9 +43,11 @@
 	"notes": "Notas da Sinalização",
 	"add-note": "Adicionar Nota",
 	"no-notes": "Nenhuma nota compartilhada.",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Nota Adicionada",
+	"note-deleted": "Note Deleted",
 
-	"history": "Histórico de Sinalizações",
-	"back": "Voltar à Lista de Sinaliações",
+	"history": "Account &amp; Flag History",
 	"no-history": "Sem histórico de sinalizações.",
 
 	"state-all": "Todos os estados",
@@ -50,7 +56,11 @@
 	"state-resolved": "Resolvido",
 	"state-rejected": "Rejeitado",
 	"no-assignee": "Não Atribuído",
-	"note-added": "Nota Adicionada",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Reportar Conteúdo Inadequado",
 	"modal-body": "Por favor, especifique a razão pela qual você está sinalizando %1 %2 para a revisão. Alternativamente, use um dos botões de reporte rápido se for aplicável.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "O conteúdo foi sinalizado para moderação.",
 	"modal-submit-confirm": "Cofirmar Envio",
 	"modal-submit-confirm-text": "Você já especificou um motivo individual. Tem certeza de que deseja enviar uma denúncia rápida?",
-	"modal-submit-confirm-text-help": "O envio de uma denúncia rápida substituirá os motivos individuais especificados."
+	"modal-submit-confirm-text-help": "O envio de uma denúncia rápida substituirá os motivos individuais especificados.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

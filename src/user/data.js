@@ -11,8 +11,9 @@ const utils = require('../utils');
 
 const intFields = [
 	'uid', 'postcount', 'topiccount', 'reputation', 'profileviews',
-	'banned', 'banned:expire', 'email:confirmed', 'joindate', 'lastonline', 'lastqueuetime',
-	'lastposttime', 'followingCount', 'followerCount', 'passwordExpiry',
+	'banned', 'banned:expire', 'email:confirmed', 'joindate', 'lastonline',
+	'lastqueuetime', 'lastposttime', 'followingCount', 'followerCount',
+	'blocksCount', 'passwordExpiry',
 ];
 
 module.exports = function (User) {
@@ -66,8 +67,12 @@ module.exports = function (User) {
 		}
 
 		let users = await db.getObjectsFields(uniqueUids.map(uid => 'user:' + uid), fields);
-		users = uidsToUsers(uids, uniqueUids, users);
-
+		const result = await plugins.fireHook('filter:user.getFields', {
+			uids: uniqueUids,
+			users: users,
+			fields: fields,
+		});
+		users = uidsToUsers(uids, uniqueUids, result.users);
 		return await modifyUserData(users, fields, fieldsToRemove);
 	};
 

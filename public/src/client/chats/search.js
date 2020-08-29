@@ -28,6 +28,7 @@ define('forum/chats/search', ['components'], function (components) {
 		socket.emit('user.search', {
 			query: username,
 			searchBy: 'username',
+			paginate: false,
 		}, function (err, data) {
 			if (err) {
 				return app.alertError(err.message);
@@ -64,7 +65,7 @@ define('forum/chats/search', ['components'], function (components) {
 				'<i class="fa fa-circle status ' + userObj.status + '"></i> ' + userObj.username;
 		}
 
-		var chatEl = $('<li component="chat/search/user" />')
+		var chatEl = $('<li component="chat/search/user"></li>')
 			.attr('data-uid', userObj.uid)
 			.appendTo(chatsListEl);
 

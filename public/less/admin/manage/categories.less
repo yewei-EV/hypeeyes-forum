@@ -1,5 +1,5 @@
 div.categories {
-	ul {
+	ul[data-cid] {
 		.no-select;
 		list-style-type: none;
 		margin: 0;
@@ -19,6 +19,14 @@ div.categories {
 				border-bottom: 0px;
 			}
 		}
+		> li {
+			margin: @acp-base-line 0;
+
+			&.placeholder {
+				border: 1px dashed #2196F3;
+				background-color: #E1F5FE;
+			}
+		}
 	}
 
 	.stats {
@@ -32,15 +40,6 @@ div.categories {
 		}
 	}
 
-	li {
-		min-height: @acp-line-height;
-		margin: @acp-base-line 0;
-
-		&.placeholder {
-			border: 1px dashed #2196F3;
-			background-color: #E1F5FE;
-		}
-	}
 
 	.disabled > .category-row {
 
@@ -69,24 +68,25 @@ div.categories {
 		}
 	}
 
-	.icon {
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		line-height: 24px;
-		text-align: center;
-		vertical-align: bottom;
-		background-size: cover;
-		float: left;
-		margin-right: 0px;
-		cursor: move;
-		.fa {
-			font-size: 85%;
-		}
-	}
-
 	.information {
-		padding-left: 60px;
+		cursor: move;
+		padding-left: 3rem;
+
+		.icon {
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			line-height: 24px;
+			text-align: center;
+			vertical-align: bottom;
+			background-size: cover;
+			float: left;
+			margin-right: 1rem;
+
+			.fa {
+				font-size: 85%;
+			}
+		}
 	}
 
 	.category-header {

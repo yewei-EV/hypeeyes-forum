@@ -1,8 +1,7 @@
 {
 	"state": "Стање",
-	"reporter": "Извештач",
-	"reported-at": "Пријављено",
-	"description": "Опис",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Ура! Нема заставица.",
 	"assignee": "Заступник",
 	"update": "Ажурирај",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Додељено мени",
 	"filter-cid-all": "Све категорије",
 	"apply-filters": "Примени филтере",
+	"more-filters": "More Filters",
 
-	"quick-links": "Брзе везе",
+	"quick-actions": "Брзе радње",
 	"flagged-user": "Означени корисник",
 	"view-profile": "Погледај профил",
 	"start-new-chat": "Започни ново ћаскање",
 	"go-to-target": "Погледај циљ означавања",
+	"assign-to-me": "Додели мени",
+	"delete-post": "Избриши поруку",
+	"purge-post": "Очисти поруку",
+	"restore-post": "Врати поруку",
 
 	"user-view": "Погледај профил",
 	"user-edit": "Уреди профил",
@@ -39,9 +43,11 @@
 	"notes": "Белешке о заставицама",
 	"add-note": "Додај белешку",
 	"no-notes": "Нема дељених бележака.",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Белешка је додата",
+	"note-deleted": "Note Deleted",
 
-	"history": "Историја заставица",
-	"back": "Назад на списак заставица",
+	"history": "Налог и историја заставица",
 	"no-history": "Нема историје заставица",
 
 	"state-all": "Сва стања",
@@ -50,7 +56,11 @@
 	"state-resolved": "Решено",
 	"state-rejected": "Одбијено",
 	"no-assignee": "Недодељено",
-	"note-added": "Белешка је додата",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Пријави неприкладан садржај",
 	"modal-body": "Наведите разлог за означавање %1 %2 за проверу. Алтернативно, користите један од тастера за брзу пријаву ко је применљиво.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Садржај је означен за модерацију.",
 	"modal-submit-confirm": "Потврди подношење",
 	"modal-submit-confirm-text": "Већ имате наведени прилагођени разлог. Да ли сте сигурни да желите послати путем брзог извештаја?",
-	"modal-submit-confirm-text-help": "Подношење брзог извештаја ће заменити све прилагођене разлоге."
+	"modal-submit-confirm-text-help": "Подношење брзог извештаја ће заменити све прилагођене разлоге.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

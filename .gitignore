@@ -1,4 +1,5 @@
 public/bootstrap.min.css
+dist/
 yarn.lock
 npm-debug.log
 node_modules/
@@ -67,3 +68,5 @@ test/files/normalise.jpg.png
 test/files/normalise-resized.jpg
 package-lock.json
 /package.json
+*.mongodb
+link-plugins.sh

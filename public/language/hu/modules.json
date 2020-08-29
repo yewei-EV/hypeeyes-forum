@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Chat with",
     "chat.placeholder": "Ide írd be az üzenetet, majd küldéshez Enter gomb",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Küldés",
     "chat.no_active": "Nincs aktív csevegésed.",
     "chat.user_typing": "%1 éppen ír ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Legutóbbi csevegések",
     "chat.contacts": "Névjegyzék",
     "chat.message-history": "Üzenet előzmények",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Felugró csevegés",
     "chat.minimize": "Kis méret",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Fájl feltöltése",
     "composer.zen_mode": "Zen mód",
     "composer.select_category": "Kategória választása",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Mégse",
     "bootbox.confirm": "Megerősítés",

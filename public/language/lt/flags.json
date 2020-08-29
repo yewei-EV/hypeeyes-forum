@@ -1,8 +1,7 @@
 {
 	"state": "State",
-	"reporter": "Reporter",
-	"reported-at": "Reported At",
-	"description": "Description",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "Hooray! No flags found.",
 	"assignee": "Assignee",
 	"update": "Atnaujinti",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "Assigned to me",
 	"filter-cid-all": "All categories",
 	"apply-filters": "Apply Filters",
+	"more-filters": "More Filters",
 
-	"quick-links": "Quick Links",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "Flagged User",
 	"view-profile": "View Profile",
 	"start-new-chat": "Start New Chat",
 	"go-to-target": "View Flag Target",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "View Profile",
 	"user-edit": "Edit Profile",
@@ -39,9 +43,11 @@
 	"notes": "Flag Notes",
 	"add-note": "Add Note",
 	"no-notes": "No shared notes.",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "Note Added",
+	"note-deleted": "Note Deleted",
 
-	"history": "Flag History",
-	"back": "Back to Flags List",
+	"history": "Account &amp; Flag History",
 	"no-history": "No flag history.",
 
 	"state-all": "All states",
@@ -50,7 +56,11 @@
 	"state-resolved": "Resolved",
 	"state-rejected": "Atmesta",
 	"no-assignee": "Nepriskirta",
-	"note-added": "Note Added",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "Report Inappropriate Content",
 	"modal-body": "Please specify your reason for flagging %1 %2 for review. Alternatively, use one of the quick report buttons if applicable.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "Content has been flagged for moderation.",
 	"modal-submit-confirm": "Confirm Submission",
 	"modal-submit-confirm-text": "You have a custom reason specified already. Are you sure you wish to submit via quick-report?",
-	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined."
+	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

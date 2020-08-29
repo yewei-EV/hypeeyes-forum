@@ -2,7 +2,6 @@
 
 const nconf = require('nconf');
 const validator = require('validator');
-const winston = require('winston');
 const querystring = require('querystring');
 const _ = require('lodash');
 
@@ -15,21 +14,19 @@ const middleware = require('../middleware');
 
 const helpers = module.exports;
 
-helpers.noScriptErrors = function (req, res, error, httpStatus) {
+helpers.noScriptErrors = async function (req, res, error, httpStatus) {
 	if (req.body.noscript !== 'true') {
 		return res.status(httpStatus).send(error);
 	}
 
-	const middleware = require('../middleware');
 	const httpStatusString = httpStatus.toString();
-	middleware.buildHeader(req, res, function () {
-		res.status(httpStatus).render(httpStatusString, {
-			path: req.path,
-			loggedIn: req.loggedIn,
-			error: error,
-			returnLink: true,
-			title: '[[global:' + httpStatusString + '.title]]',
-		});
+	await middleware.buildHeaderAsync(req, res);
+	res.status(httpStatus).render(httpStatusString, {
+		path: req.path,
+		loggedIn: req.loggedIn,
+		error: error,
+		returnLink: true,
+		title: '[[global:' + httpStatusString + '.title]]',
 	});
 };
 
@@ -56,27 +53,44 @@ helpers.buildQueryString = function (cid, filter, term) {
 	return Object.keys(qs).length ? '?' + querystring.stringify(qs) : '';
 };
 
+helpers.addLinkTags = function (params) {
+	params.res.locals.linkTags = params.res.locals.linkTags || [];
+	params.res.locals.linkTags.push({
+		rel: 'canonical',
+		href: nconf.get('url') + '/' + params.url,
+	});
+
+	params.tags.forEach(function (rel) {
+		rel.href = nconf.get('url') + '/' + params.url + rel.href;
+		params.res.locals.linkTags.push(rel);
+	});
+};
+
 helpers.buildFilters = function (url, filter, query) {
 	return [{
 		name: '[[unread:all-topics]]',
 		url: url + helpers.buildQueryString(query.cid, '', query.term),
 		selected: filter === '',
 		filter: '',
+		icon: 'fa-book',
 	}, {
 		name: '[[unread:new-topics]]',
 		url: url + helpers.buildQueryString(query.cid, 'new', query.term),
 		selected: filter === 'new',
 		filter: 'new',
+		icon: 'fa-clock-o',
 	}, {
 		name: '[[unread:watched-topics]]',
 		url: url + helpers.buildQueryString(query.cid, 'watched', query.term),
 		selected: filter === 'watched',
 		filter: 'watched',
+		icon: 'fa-bell-o',
 	}, {
 		name: '[[unread:unreplied-topics]]',
 		url: url + helpers.buildQueryString(query.cid, 'unreplied', query.term),
 		selected: filter === 'unreplied',
 		filter: 'unreplied',
+		icon: 'fa-reply',
 	}];
 };
 
@@ -104,48 +118,44 @@ helpers.buildTerms = function (url, term, query) {
 	}];
 };
 
-helpers.notAllowed = function (req, res, error) {
-	plugins.fireHook('filter:helpers.notAllowed', {
+helpers.notAllowed = async function (req, res, error) {
+	const data = await plugins.fireHook('filter:helpers.notAllowed', {
 		req: req,
 		res: res,
 		error: error,
-	}, function (err) {
-		if (err) {
-			return winston.error(err);
-		}
-		if (req.loggedIn || req.uid === -1) {
-			if (res.locals.isAPI) {
-				res.status(403).json({
-					path: req.path.replace(/^\/api/, ''),
-					loggedIn: req.loggedIn,
-					error: error,
-					title: '[[global:403.title]]',
-				});
-			} else {
-				middleware.buildHeader(req, res, function () {
-					res.status(403).render('403', {
-						path: req.path,
-						loggedIn: req.loggedIn,
-						error: error,
-						title: '[[global:403.title]]',
-					});
-				});
-			}
-		} else if (res.locals.isAPI) {
-			req.session.returnTo = req.url.replace(/^\/api/, '');
-			res.status(401).json('not-authorized');
-		} else {
-			req.session.returnTo = req.url;
-			res.redirect(nconf.get('relative_path') + '/login');
-		}
 	});
+
+	if (req.loggedIn || req.uid === -1) {
+		if (res.locals.isAPI) {
+			res.status(403).json({
+				path: req.path.replace(/^\/api/, ''),
+				loggedIn: req.loggedIn,
+				error: data.error,
+				title: '[[global:403.title]]',
+			});
+		} else {
+			await middleware.buildHeaderAsync(req, res);
+			res.status(403).render('403', {
+				path: req.path,
+				loggedIn: req.loggedIn,
+				error: data.error,
+				title: '[[global:403.title]]',
+			});
+		}
+	} else if (res.locals.isAPI) {
+		req.session.returnTo = req.url.replace(/^\/api/, '');
+		res.status(401).json('not-authorized');
+	} else {
+		req.session.returnTo = req.url;
+		res.redirect(nconf.get('relative_path') + '/login');
+	}
 };
 
-helpers.redirect = function (res, url) {
+helpers.redirect = function (res, url, permanent) {
 	if (res.locals.isAPI) {
 		res.set('X-Redirect', encodeURI(url)).status(200).json(url);
 	} else {
-		res.redirect(nconf.get('relative_path') + encodeURI(url));
+		res.redirect(permanent ? 308 : 307, nconf.get('relative_path') + encodeURI(url));
 	}
 };
 
@@ -159,6 +169,7 @@ helpers.buildCategoryBreadcrumbs = async function (cid) {
 			breadcrumbs.unshift({
 				text: String(data.name),
 				url: nconf.get('relative_path') + '/category/' + data.slug,
+				cid: cid,
 			});
 		}
 		cid = data.parentCid;
@@ -221,7 +232,7 @@ async function getCategoryData(cids, uid, selectedCid, states) {
 	if (selectedCid && !Array.isArray(selectedCid)) {
 		selectedCid = [selectedCid];
 	}
-
+	selectedCid = selectedCid && selectedCid.map(String);
 	states = states || [categories.watchStates.watching, categories.watchStates.notwatching];
 
 	const [allowed, watchState, categoryData, isAdmin] = await Promise.all([
@@ -285,7 +296,7 @@ function checkVisibleChildren(c, cidToAllowed, cidToWatchState, states) {
 	if (!c || !Array.isArray(c.children)) {
 		return false;
 	}
-	return c.children.some(c => c && (
+	return c.children.some(c => c && !c.disabled && (
 		(cidToAllowed[c.cid] && states.includes(cidToWatchState[c.cid])) || checkVisibleChildren(c, cidToAllowed, cidToWatchState, states)
 	));
 }

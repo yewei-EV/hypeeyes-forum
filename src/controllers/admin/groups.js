@@ -1,11 +1,15 @@
 'use strict';
 
+const nconf = require('nconf');
 const validator = require('validator');
 
 const db = require('../../database');
+const user = require('../../user');
+const categories = require('../../categories');
 const groups = require('../../groups');
 const meta = require('../../meta');
 const pagination = require('../../pagination');
+const events = require('../../events');
 
 const groupsController = module.exports;
 
@@ -17,13 +21,15 @@ groupsController.list = async function (req, res) {
 	const pageCount = Math.ceil(groupNames.length / groupsPerPage);
 	const start = (page - 1) * groupsPerPage;
 	const stop = start + groupsPerPage - 1;
-
 	groupNames = groupNames.slice(start, stop + 1);
+
+	const allCategories = await categories.buildForSelectAll();
 	const groupData = await groups.getGroupsData(groupNames);
 	res.render('admin/manage/groups', {
 		groups: groupData,
 		pagination: pagination.create(page, pageCount),
 		yourid: req.uid,
+		categories: allCategories,
 	});
 };
 
@@ -47,12 +53,15 @@ groupsController.get = async function (req, res, next) {
 		};
 	});
 
+	const allCategories = await categories.buildForSelectAll();
+
 	res.render('admin/manage/group', {
 		group: group,
 		groupNames: groupNameData,
 		allowPrivateGroups: meta.config.allowPrivateGroups,
 		maximumGroupNameLength: meta.config.maximumGroupNameLength,
 		maximumGroupTitleLength: meta.config.maximumGroupTitleLength,
+		categories: allCategories,
 	});
 };
 
@@ -60,3 +69,29 @@ async function getGroupNames() {
 	const groupNames = await db.getSortedSetRange('groups:createtime', 0, -1);
 	return groupNames.filter(name => name !== 'registered-users' && !groups.isPrivilegeGroup(name));
 }
+
+groupsController.getCSV = async function (req, res) {
+	const referer = req.headers.referer;
+
+	if (!referer || !referer.replace(nconf.get('url'), '').startsWith('/admin/manage/groups')) {
+		return res.status(403).send('[[error:invalid-origin]]');
+	}
+	await events.log({
+		type: 'getGroupCSV',
+		uid: req.uid,
+		ip: req.ip,
+	});
+	const groupName = req.params.groupname;
+	const members = (await groups.getMembersOfGroups([groupName]))[0];
+	const fields = ['email', 'username', 'uid'];
+	const userData = await user.getUsersFields(members, fields);
+	let csvContent = fields.join(',') + '\n';
+	csvContent += userData.reduce((memo, user) => {
+		memo += user.email + ',' + user.username + ',' + user.uid + '\n';
+		return memo;
+	}, '');
+
+	res.attachment(validator.escape(groupName) + '_members.csv');
+	res.setHeader('Content-Type', 'text/csv');
+	res.end(csvContent);
+};

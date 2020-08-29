@@ -56,7 +56,7 @@ function topicRoutes(app, middleware, controllers) {
 
 function postRoutes(app, middleware, controllers) {
 	const middlewares = [middleware.maintenanceMode, middleware.registrationComplete, middleware.pluginHooks];
-	app.get('/post/:pid', middleware.busyCheck, middleware.buildHeader, middlewares, controllers.posts.redirectToPost);
+	app.get('/post/:pid', middleware.busyCheck, middlewares, controllers.posts.redirectToPost);
 	app.get('/api/post/:pid', middlewares, controllers.posts.redirectToPost);
 }
 
@@ -98,8 +98,8 @@ module.exports = async function (app, middleware) {
 	var ensureLoggedIn = require('connect-ensure-login');
 
 	router.all('(/+api|/+api/*?)', middleware.prepareAPI);
-	router.all('(/+api/admin|/+api/admin/*?)', middleware.isAdmin);
-	router.all('(/+admin|/+admin/*?)', ensureLoggedIn.ensureLoggedIn(nconf.get('relative_path') + '/login?local=1'), middleware.applyCSRF, middleware.isAdmin);
+	router.all('(/+api/admin|/+api/admin/*?)', middleware.admin.checkPrivileges);
+	router.all('(/+admin|/+admin/*?)', ensureLoggedIn.ensureLoggedIn(nconf.get('relative_path') + '/login?local=1'), middleware.applyCSRF, middleware.admin.checkPrivileges);
 
 	app.use(middleware.stripLeadingSlashes);
 
@@ -165,19 +165,6 @@ function addCoreRoutes(app, router, middleware) {
 	// Skins
 	meta.css.supportedSkins.forEach(function (skin) {
 		app.use(relativePath + '/assets/client-' + skin + '.css', middleware.buildSkinAsset);
-	});
-
-	// only warn once
-	var warned = new Set();
-
-	// DEPRECATED (v1.12.0)
-	app.use(relativePath + '/assets/stylesheet.css', function (req, res) {
-		if (!warned.has(req.path)) {
-			winston.warn('[deprecated] Accessing `/assets/stylesheet.css` is deprecated to be REMOVED in NodeBB v1.12.0. ' +
-			'Use `/assets/client.css` to access this file');
-			warned.add(req.path);
-		}
-		res.redirect(relativePath + '/assets/client.css?' + meta.config['cache-buster']);
 	});
 
 	app.use(controllers['404'].handle404);

@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "Chat with",
     "chat.placeholder": "Nhập tin nhắn ở đây, nhấn enter để gửi",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "Gửi",
     "chat.no_active": "Bạn hiện giờ không có cuộc chat nào",
     "chat.user_typing": "%1b đang gõ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "Vừa chat",
     "chat.contacts": "Liên hệ",
     "chat.message-history": "Lịch sử tin nhắn",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "Chat options",
     "chat.pop-out": "Bật cửa sổ chat",
     "chat.minimize": "Minimize",
@@ -57,6 +59,7 @@
     "composer.upload-file": "Tải file lên",
     "composer.zen_mode": "Zen Mode",
     "composer.select_category": "Chọn một chuyên mục",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "OK",
     "bootbox.cancel": "Huỷ bỏ",
     "bootbox.confirm": "Xác nhận",

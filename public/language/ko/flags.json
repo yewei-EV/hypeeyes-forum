@@ -1,8 +1,7 @@
 {
 	"state": "처리 상태",
-	"reporter": "신고자",
-	"reported-at": "신고시간",
-	"description": "설명",
+	"reports": "Reports",
+	"first-reported": "First Reported",
 	"no-flags": "들어온 신고가 없습니다.",
 	"assignee": "담당자",
 	"update": "업데이트",
@@ -26,12 +25,17 @@
 	"filter-quick-mine": "나에게 배정된 신고",
 	"filter-cid-all": "모든 게시판",
 	"apply-filters": "필터 적용",
+	"more-filters": "More Filters",
 
-	"quick-links": "바로가기",
+	"quick-actions": "Quick Actions",
 	"flagged-user": "신고된 사용자",
 	"view-profile": "프로필 보기",
 	"start-new-chat": "새로운 채팅 시작",
 	"go-to-target": "신고된 게시물 바로가기",
+	"assign-to-me": "Assign To Me",
+	"delete-post": "Delete Post",
+	"purge-post": "Purge Post",
+	"restore-post": "Restore Post",
 
 	"user-view": "프로필 보기",
 	"user-edit": "프로필 수정",
@@ -39,9 +43,11 @@
 	"notes": "관리자 피드백",
 	"add-note": "노트 추가",
 	"no-notes": "공유된 노트가 없습니다.",
+	"delete-note-confirm": "Are you sure you want to delete this flag note?",
+	"note-added": "노트가 추가되었습니다.",
+	"note-deleted": "Note Deleted",
 
-	"history": "신고 기록",
-	"back": "신고 목록으로 돌아가기",
+	"history": "Account &amp; Flag History",
 	"no-history": "신고 기록들이 없습니다.",
 
 	"state-all": "모든 상태",
@@ -50,7 +56,11 @@
 	"state-resolved": "처리됨",
 	"state-rejected": "거절된 신고",
 	"no-assignee": "담당자 미정",
-	"note-added": "노트가 추가되었습니다.",
+
+	"sort": "Sort by",
+	"sort-newest": "Newest first",
+	"sort-oldest": "Oldest first",
+	"sort-reports": "Most reports",
 
 	"modal-title": "부적절한 컨텐츠 신고",
 	"modal-body": "%1 %2 에 대한 신고 사유를 적어주시거나, 빠른 신고 버튼 중 하나를 사용해 주세요.",
@@ -62,5 +72,9 @@
 	"modal-submit-success": "이 컨텐츠는 신고되었습니다.",
 	"modal-submit-confirm": "제출 확인",
 	"modal-submit-confirm-text": "You have a custom reason specified already. Are you sure you wish to submit via quick-report?",
-	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined."
+	"modal-submit-confirm-text-help": "Submitting a quick report will overwrite any custom reasons defined.",
+
+	"bulk-actions": "Bulk Actions",
+	"bulk-resolve": "Resolve Flag(s)",
+	"bulk-success": "%1 flags updated"
 }

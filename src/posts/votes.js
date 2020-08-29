@@ -1,14 +1,14 @@
 'use strict';
 
-var meta = require('../meta');
-var db = require('../database');
-var user = require('../user');
-var topics = require('../topics');
-var plugins = require('../plugins');
-var privileges = require('../privileges');
+const meta = require('../meta');
+const db = require('../database');
+const user = require('../user');
+const topics = require('../topics');
+const plugins = require('../plugins');
+const privileges = require('../privileges');
 
 module.exports = function (Posts) {
-	var votesInProgress = {};
+	const votesInProgress = {};
 
 	Posts.upvote = async function (pid, uid) {
 		if (meta.config['reputation:disabled']) {
@@ -25,8 +25,7 @@ module.exports = function (Posts) {
 		putVoteInProgress(pid, uid);
 
 		try {
-			const data = await toggleVote('upvote', pid, uid);
-			return data;
+			return await toggleVote('upvote', pid, uid);
 		} finally {
 			clearVoteProgress(pid, uid);
 		}
@@ -51,8 +50,7 @@ module.exports = function (Posts) {
 
 		putVoteInProgress(pid, uid);
 		try {
-			const data = toggleVote('downvote', pid, uid);
-			return data;
+			return await toggleVote('downvote', pid, uid);
 		} finally {
 			clearVoteProgress(pid, uid);
 		}
@@ -65,8 +63,7 @@ module.exports = function (Posts) {
 
 		putVoteInProgress(pid, uid);
 		try {
-			const data = await unvote(pid, uid, 'unvote');
-			return data;
+			return await unvote(pid, uid, 'unvote');
 		} finally {
 			clearVoteProgress(pid, uid);
 		}
@@ -85,13 +82,8 @@ module.exports = function (Posts) {
 			const data = pids.map(() => false);
 			return { upvotes: data, downvotes: data };
 		}
-		var upvoteSets = [];
-		var downvoteSets = [];
-
-		for (var i = 0; i < pids.length; i += 1) {
-			upvoteSets.push('pid:' + pids[i] + ':upvote');
-			downvoteSets.push('pid:' + pids[i] + ':downvote');
-		}
+		const upvoteSets = pids.map(pid => 'pid:' + pid + ':upvote');
+		const downvoteSets = pids.map(pid => 'pid:' + pid + ':downvote');
 		const data = await db.isMemberOfSets(upvoteSets.concat(downvoteSets), uid);
 		return {
 			upvotes: data.slice(0, pids.length),
@@ -114,7 +106,7 @@ module.exports = function (Posts) {
 
 	function clearVoteProgress(pid, uid) {
 		if (Array.isArray(votesInProgress[uid])) {
-			var index = votesInProgress[uid].indexOf(parseInt(pid, 10));
+			const index = votesInProgress[uid].indexOf(parseInt(pid, 10));
 			if (index !== -1) {
 				votesInProgress[uid].splice(index, 1);
 			}
@@ -127,22 +119,21 @@ module.exports = function (Posts) {
 	}
 
 	async function unvote(pid, uid, command) {
-		const [owner, voteStatus, reputation] = await Promise.all([
+		const [owner, voteStatus] = await Promise.all([
 			Posts.getPostField(pid, 'uid'),
 			Posts.hasVoted(pid, uid),
-			user.getUserField(uid, 'reputation'),
 		]);
 
 		if (parseInt(uid, 10) === parseInt(owner, 10)) {
 			throw new Error('[[error:self-vote]]');
 		}
 
-		if (command === 'downvote' && reputation < meta.config['min:rep:downvote']) {
-			throw new Error('[[error:not-enough-reputation-to-downvote]]');
+		if (command === 'downvote') {
+			await checkDownvoteLimitation(pid, uid);
 		}
 
-		var hook;
-		var current = voteStatus.upvoted ? 'upvote' : 'downvote';
+		let hook;
+		let current = voteStatus.upvoted ? 'upvote' : 'downvote';
 
 		if ((voteStatus.upvoted && command === 'downvote') || (voteStatus.downvoted && command === 'upvote')) {	// e.g. User *has* upvoted, and clicks downvote
 			hook = command;
@@ -167,31 +158,54 @@ module.exports = function (Posts) {
 		return await vote(voteStatus.upvoted ? 'downvote' : 'upvote', true, pid, uid);
 	}
 
+	async function checkDownvoteLimitation(pid, uid) {
+		const oneDay = 86400000;
+		const [reputation, targetUid, downvotedPids] = await Promise.all([
+			user.getUserField(uid, 'reputation'),
+			Posts.getPostField(pid, 'uid'),
+			db.getSortedSetRevRangeByScore(
+				'uid:' + uid + ':downvote', 0, -1, '+inf', Date.now() - oneDay
+			),
+		]);
+
+		if (reputation < meta.config['min:rep:downvote']) {
+			throw new Error('[[error:not-enough-reputation-to-downvote]]');
+		}
+
+		if (meta.config.downvotesPerDay && downvotedPids.length >= meta.config.downvotesPerDay) {
+			throw new Error('[[error:too-many-downvotes-today, ' + meta.config.downvotesPerDay + ']]');
+		}
+
+		if (meta.config.downvotesPerUserPerDay) {
+			const postData = await Posts.getPostsFields(downvotedPids, ['uid']);
+			const targetDownvotes = postData.filter(p => p.uid === targetUid).length;
+			if (targetDownvotes >= meta.config.downvotesPerUserPerDay) {
+				throw new Error('[[error:too-many-downvotes-today-user, ' + meta.config.downvotesPerUserPerDay + ']]');
+			}
+		}
+	}
+
 	async function vote(type, unvote, pid, uid) {
 		uid = parseInt(uid, 10);
 		if (uid <= 0) {
 			throw new Error('[[error:not-logged-in]]');
 		}
-		const postData = await Posts.getPostFields(pid, ['pid', 'uid', 'tid']);
-
-		var now = Date.now();
+		const now = Date.now();
 
 		if (type === 'upvote' && !unvote) {
-			db.sortedSetAdd('uid:' + uid + ':upvote', now, pid);
+			await db.sortedSetAdd('uid:' + uid + ':upvote', now, pid);
 		} else {
-			db.sortedSetRemove('uid:' + uid + ':upvote', pid);
+			await db.sortedSetRemove('uid:' + uid + ':upvote', pid);
 		}
 
 		if (type === 'upvote' || unvote) {
-			db.sortedSetRemove('uid:' + uid + ':downvote', pid);
+			await db.sortedSetRemove('uid:' + uid + ':downvote', pid);
 		} else {
-			db.sortedSetAdd('uid:' + uid + ':downvote', now, pid);
+			await db.sortedSetAdd('uid:' + uid + ':downvote', now, pid);
 		}
 
-		const newReputation = await user[type === 'upvote' ? 'incrementUserFieldBy' : 'decrementUserFieldBy'](postData.uid, 'reputation', 1);
-		if (parseInt(postData.uid, 10)) {
-			db.sortedSetAdd('users:reputation', newReputation, postData.uid);
-		}
+		const postData = await Posts.getPostFields(pid, ['pid', 'uid', 'tid']);
+		const newReputation = await user.incrementUserReputationBy(postData.uid, type === 'upvote' ? 1 : -1);
 
 		await adjustPostVotes(postData, uid, type, unvote);
 
@@ -207,7 +221,7 @@ module.exports = function (Posts) {
 	}
 
 	async function adjustPostVotes(postData, uid, type, unvote) {
-		var notType = (type === 'upvote' ? 'downvote' : 'upvote');
+		const notType = (type === 'upvote' ? 'downvote' : 'upvote');
 		if (unvote) {
 			await db.setRemove('pid:' + postData.pid + ':' + type, uid);
 		} else {
@@ -237,6 +251,7 @@ module.exports = function (Posts) {
 				downvotes: postData.downvotes,
 			}),
 		]);
+		plugins.fireHook('action:post.updatePostVoteCount', { post: postData });
 	};
 
 	async function updateTopicVoteCount(postData) {

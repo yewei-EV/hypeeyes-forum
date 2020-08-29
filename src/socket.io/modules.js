@@ -8,7 +8,7 @@ const notifications = require('../notifications');
 const plugins = require('../plugins');
 const Messaging = require('../messaging');
 const utils = require('../utils');
-const server = require('./');
+const server = require('./index');
 const user = require('../user');
 const privileges = require('../privileges');
 
@@ -113,11 +113,14 @@ SocketModules.chats.getUsersInRoom = async function (socket, data) {
 	if (!data || !data.roomId) {
 		throw new Error('[[error:invalid-data]]');
 	}
-	const [userData, isOwner] = await Promise.all([
-		Messaging.getUsersInRoom(data.roomId, 0, -1),
+	const [isUserInRoom, isOwner, userData] = await Promise.all([
+		Messaging.isUserInRoom(socket.uid, data.roomId),
 		Messaging.isRoomOwner(socket.uid, data.roomId),
+		Messaging.getUsersInRoom(data.roomId, 0, -1),
 	]);
-
+	if (!isUserInRoom) {
+		throw new Error('[[error:no-privileges]]');
+	}
 	userData.forEach((user) => {
 		user.canKick = (parseInt(user.uid, 10) !== parseInt(socket.uid, 10)) && isOwner;
 	});
@@ -193,7 +196,7 @@ SocketModules.chats.delete = async function (socket, data) {
 		throw new Error('[[error:invalid-data]]');
 	}
 	await Messaging.canDelete(data.messageId, socket.uid);
-	await Messaging.deleteMessage(data.messageId);
+	await Messaging.deleteMessage(data.messageId, socket.uid);
 };
 
 SocketModules.chats.restore = async function (socket, data) {
@@ -201,7 +204,7 @@ SocketModules.chats.restore = async function (socket, data) {
 		throw new Error('[[error:invalid-data]]');
 	}
 	await Messaging.canDelete(data.messageId, socket.uid);
-	await Messaging.restoreMessage(data.messageId);
+	await Messaging.restoreMessage(data.messageId, socket.uid);
 };
 
 SocketModules.chats.canMessage = async function (socket, roomId) {

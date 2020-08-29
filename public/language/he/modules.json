@@ -1,6 +1,7 @@
 {
     "chat.chatting_with": "לשוחח עם",
     "chat.placeholder": "הקלד את הודעת הצ'אט כאן, לחץ אנטר לשליחה",
+    "chat.scroll-up-alert": "You are looking at older messages, click here to go to most recent message.",
     "chat.send": "שלח",
     "chat.no_active": "אין לך צ'אטים פעילים",
     "chat.user_typing": "%1 מקליד ...",
@@ -12,6 +13,7 @@
     "chat.recent-chats": "צ'אטים אחרונים",
     "chat.contacts": "אנשי קשר",
     "chat.message-history": "היסטוריית הודעות",
+    "chat.message-deleted": "Message Deleted",
     "chat.options": "אפשרויות לשיחה",
     "chat.pop-out": "הוצא את חלון הצ'אט",
     "chat.minimize": "צמצם",
@@ -57,6 +59,7 @@
     "composer.upload-file": "העלה קובץ",
     "composer.zen_mode": "מצב זן",
     "composer.select_category": "בחר קטגוריה",
+    "composer.textarea.placeholder": "Enter your post content here, drag and drop images",
     "bootbox.ok": "אוקיי",
     "bootbox.cancel": "בטל",
     "bootbox.confirm": "אשר",

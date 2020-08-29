@@ -17,7 +17,13 @@ const file = require('../file');
 module.exports = function (User) {
 	const deletesInProgress = {};
 
-	User.delete = async function (callerUid, uid) {
+	User.delete = async (callerUid, uid) => {
+		await User.deleteContent(callerUid, uid);
+		await removeFromSortedSets(uid);
+		return await User.deleteAccount(uid);
+	};
+
+	User.deleteContent = async function (callerUid, uid) {
 		if (parseInt(uid, 10) <= 0) {
 			throw new Error('[[error:invalid-uid]]');
 		}
@@ -25,12 +31,10 @@ module.exports = function (User) {
 			throw new Error('[[error:already-deleting]]');
 		}
 		deletesInProgress[uid] = 'user.delete';
-		await removeFromSortedSets(uid);
 		await deletePosts(callerUid, uid);
 		await deleteTopics(callerUid, uid);
 		await deleteUploads(uid);
-		const userData = await User.deleteAccount(uid);
-		return userData;
+		await deleteQueued(uid);
 	};
 
 	async function deletePosts(callerUid, uid) {
@@ -56,6 +60,16 @@ module.exports = function (User) {
 			});
 			await db.sortedSetRemove('uid:' + uid + ':uploads', uploadNames);
 		}, { alwaysStartAt: 0 });
+	}
+
+	async function deleteQueued(uid) {
+		let deleteIds = [];
+		await batch.processSortedSet('post:queue', async function (ids) {
+			const data = await db.getObjects(ids.map(id => 'post:queue:' + id));
+			const userQueuedIds = data.filter(d => parseInt(d.uid, 10) === parseInt(uid, 10)).map(d => d.id);
+			deleteIds = deleteIds.concat(userQueuedIds);
+		}, { batch: 500 });
+		await async.eachSeries(deleteIds, posts.removeFromQueue);
 	}
 
 	async function removeFromSortedSets(uid) {

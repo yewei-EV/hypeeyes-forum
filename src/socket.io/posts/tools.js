@@ -2,6 +2,7 @@
 
 const posts = require('../../posts');
 const topics = require('../../topics');
+const flags = require('../../flags');
 const events = require('../../events');
 const websockets = require('../index');
 const socketTopics = require('../topics');
@@ -19,7 +20,7 @@ module.exports = function (SocketPosts) {
 		}
 
 		const results = await utils.promiseParallel({
-			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip']),
+			posts: posts.getPostFields(data.pid, ['deleted', 'bookmarks', 'uid', 'ip', 'flagId']),
 			isAdmin: user.isAdministrator(socket.uid),
 			isGlobalMod: user.isGlobalModerator(socket.uid),
 			isModerator: user.isModerator(socket.uid, data.cid),
@@ -27,6 +28,7 @@ module.exports = function (SocketPosts) {
 			canDelete: privileges.posts.canDelete(data.pid, socket.uid),
 			canPurge: privileges.posts.canPurge(data.pid, socket.uid),
 			canFlag: privileges.posts.canFlag(data.pid, socket.uid),
+			flagged: flags.exists('post', data.pid, socket.uid),	// specifically, whether THIS calling user flagged
 			bookmarked: posts.hasBookmarked(data.pid, socket.uid),
 			tools: plugins.fireHook('filter:post.tools', { pid: data.pid, uid: socket.uid, tools: [] }),
 			postSharing: social.getActivePostSharing(),
@@ -48,6 +50,12 @@ module.exports = function (SocketPosts) {
 		postData.display_ip_ban = (results.isAdmin || results.isGlobalMod) && !postData.selfPost;
 		postData.display_history = results.history;
 		postData.toolsVisible = postData.tools.length || postData.display_moderator_tools;
+		postData.flags = {
+			flagId: parseInt(results.posts.flagId, 10) || null,
+			can: results.canFlag.flag,
+			exists: !!results.posts.flagId,
+			flagged: results.flagged,
+		};
 
 		if (!results.isAdmin && !results.canViewInfo) {
 			postData.ip = undefined;
@@ -167,11 +175,22 @@ module.exports = function (SocketPosts) {
 		if (!data || !Array.isArray(data.pids) || !data.toUid) {
 			throw new Error('[[error:invalid-data]]');
 		}
-		const isAdminOrGlobalMod = user.isAdminOrGlobalMod(socket.uid);
+		const isAdminOrGlobalMod = await user.isAdminOrGlobalMod(socket.uid);
 		if (!isAdminOrGlobalMod) {
 			throw new Error('[[error:no-privileges]]');
 		}
 
-		await posts.changeOwner(data.pids, data.toUid);
+		var postData = await posts.changeOwner(data.pids, data.toUid);
+		var logs = postData.map(({ pid, uid, cid }) => (events.log({
+			type: 'post-change-owner',
+			uid: socket.uid,
+			ip: socket.ip,
+			targetUid: data.toUid,
+			pid: pid,
+			originalUid: uid,
+			cid: cid,
+		})));
+
+		await Promise.all(logs);
 	};
 };

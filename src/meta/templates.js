@@ -1,14 +1,12 @@
 'use strict';
 
-const mkdirp = require('mkdirp');
+const util = require('util');
+let mkdirp = require('mkdirp');
+mkdirp = mkdirp.hasOwnProperty('native') ? mkdirp : util.promisify(mkdirp);
 const rimraf = require('rimraf');
 const winston = require('winston');
 const path = require('path');
-
-const util = require('util');
 const fs = require('fs');
-const fsReadFile = util.promisify(fs.readFile);
-const fsWriteFile = util.promisify(fs.writeFile);
 
 const nconf = require('nconf');
 const _ = require('lodash');
@@ -33,7 +31,7 @@ async function processImports(paths, templatePath, source) {
 
 	var partial = matches[1];
 	if (paths[partial] && templatePath !== partial) {
-		const partialSource = await fsReadFile(paths[partial], 'utf8');
+		const partialSource = await fs.promises.readFile(paths[partial], 'utf8');
 		source = source.replace(regex, partialSource);
 		return await processImports(paths, templatePath, source);
 	}
@@ -115,18 +113,17 @@ async function compileTemplate(filename, source) {
 
 	source = await processImports(paths, filename, source);
 	const compiled = await Benchpress.precompile(source, {
-		minify: global.env !== 'development',
+		minify: process.env.NODE_ENV !== 'development',
 	});
-	return await fsWriteFile(path.join(viewsPath, filename.replace(/\.tpl$/, '.js')), compiled);
+	return await fs.promises.writeFile(path.join(viewsPath, filename.replace(/\.tpl$/, '.js')), compiled);
 }
 Templates.compileTemplate = compileTemplate;
 
 async function compile() {
 	const _rimraf = util.promisify(rimraf);
-	const _mkdirp = util.promisify(mkdirp);
 
 	await _rimraf(viewsPath);
-	await _mkdirp(viewsPath);
+	await mkdirp(viewsPath);
 
 	let files = await db.getSortedSetRange('plugins:active', 0, -1);
 	files = await getTemplateDirs(files);
@@ -134,14 +131,14 @@ async function compile() {
 
 	await Promise.all(Object.keys(files).map(async (name) => {
 		const filePath = files[name];
-		let imported = await fsReadFile(filePath, 'utf8');
+		let imported = await fs.promises.readFile(filePath, 'utf8');
 		imported = await processImports(files, name, imported);
 
-		await _mkdirp(path.join(viewsPath, path.dirname(name)));
+		await mkdirp(path.join(viewsPath, path.dirname(name)));
 
-		await fsWriteFile(path.join(viewsPath, name), imported);
-		const compiled = await Benchpress.precompile(imported, { minify: global.env !== 'development' });
-		await fsWriteFile(path.join(viewsPath, name.replace(/\.tpl$/, '.js')), compiled);
+		await fs.promises.writeFile(path.join(viewsPath, name), imported);
+		const compiled = await Benchpress.precompile(imported, { minify: process.env.NODE_ENV !== 'development' });
+		await fs.promises.writeFile(path.join(viewsPath, name.replace(/\.tpl$/, '.js')), compiled);
 	}));
 
 	winston.verbose('[meta/templates] Successfully compiled templates.');

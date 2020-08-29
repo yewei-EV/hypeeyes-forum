@@ -1,52 +1,45 @@
 'use strict';
 
-var assert = require('assert');
-var async = require('async');
+const assert = require('assert');
+const async = require('async');
+const util = require('util');
+const sleep = util.promisify(setTimeout);
 
-var db = require('./mocks/databasemock');
-var Flags = require('../src/flags');
-var Categories = require('../src/categories');
-var Topics = require('../src/topics');
-var Posts = require('../src/posts');
-var User = require('../src/user');
-var Groups = require('../src/groups');
-var Meta = require('../src/meta');
+const db = require('./mocks/databasemock');
+const Flags = require('../src/flags');
+const Categories = require('../src/categories');
+const Topics = require('../src/topics');
+const Posts = require('../src/posts');
+const User = require('../src/user');
+const Groups = require('../src/groups');
+const Meta = require('../src/meta');
+const Privileges = require('../src/privileges');
 
 describe('Flags', function () {
-	before(function (done) {
+	let uid1;
+	let adminUid;
+	let uid3;
+	let category;
+	before(async () => {
 		// Create some stuff to flag
-		async.waterfall([
-			async.apply(User.create, { username: 'testUser', password: 'abcdef', email: 'b@c.com' }),
-			function (uid, next) {
-				Categories.create({
-					name: 'test category',
-				}, function (err, category) {
-					if (err) {
-						return done(err);
-					}
+		uid1 = await User.create({ username: 'testUser', password: 'abcdef', email: 'b@c.com' });
 
-					Topics.post({
-						cid: category.cid,
-						uid: uid,
-						title: 'Topic to flag',
-						content: 'This is flaggable content',
-					}, next);
-				});
-			},
-			function (topicData, next) {
-				User.create({
-					username: 'testUser2', password: 'abcdef', email: 'c@d.com',
-				}, next);
-			},
-			function (uid, next) {
-				Groups.join('administrators', uid, next);
-			},
-			function (next) {
-				User.create({
-					username: 'unprivileged', password: 'abcdef', email: 'd@e.com',
-				}, next);
-			},
-		], done);
+		adminUid = await User.create({ username: 'testUser2', password: 'abcdef', email: 'c@d.com' });
+		await Groups.join('administrators', adminUid);
+
+		category = await Categories.create({
+			name: 'test category',
+		});
+		await Topics.post({
+			cid: category.cid,
+			uid: uid1,
+			title: 'Topic to flag',
+			content: 'This is flaggable content',
+		});
+
+		uid3 = await User.create({
+			username: 'unprivileged', password: 'abcdef', email: 'd@e.com',
+		});
 	});
 
 	describe('.create()', function () {
@@ -55,10 +48,10 @@ describe('Flags', function () {
 				assert.ifError(err);
 				var compare = {
 					flagId: 1,
-					uid: 1,
 					targetId: 1,
 					type: 'post',
-					description: 'Test flag',
+					state: 'open',
+					target_readable: 'Post 1',
 				};
 				assert(flagData);
 				for (var key in compare) {
@@ -131,11 +124,10 @@ describe('Flags', function () {
 				assert.ifError(err);
 				var compare = {
 					flagId: 1,
-					uid: 1,
 					targetId: 1,
 					type: 'post',
-					description: 'Test flag',
 					state: 'open',
+					target_readable: 'Post 1',
 				};
 				assert(flagData);
 				for (var key in compare) {
@@ -152,7 +144,10 @@ describe('Flags', function () {
 
 	describe('.list()', function () {
 		it('should show a list of flags (with one item)', function (done) {
-			Flags.list({}, 1, function (err, payload) {
+			Flags.list({
+				filters: {},
+				uid: 1,
+			}, function (err, payload) {
 				assert.ifError(err);
 				assert.ok(payload.hasOwnProperty('flags'));
 				assert.ok(payload.hasOwnProperty('page'));
@@ -172,8 +167,11 @@ describe('Flags', function () {
 		describe('(with filters)', function () {
 			it('should return a filtered list of flags if said filters are passed in', function (done) {
 				Flags.list({
-					state: 'open',
-				}, 1, function (err, payload) {
+					filters: {
+						state: 'open',
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -186,8 +184,11 @@ describe('Flags', function () {
 
 			it('should return no flags if a filter with no matching flags is used', function (done) {
 				Flags.list({
-					state: 'rejected',
-				}, 1, function (err, payload) {
+					filters: {
+						state: 'rejected',
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -200,8 +201,11 @@ describe('Flags', function () {
 
 			it('should return a flag when filtered by cid 1', function (done) {
 				Flags.list({
-					cid: 1,
-				}, 1, function (err, payload) {
+					filters: {
+						cid: 1,
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -214,8 +218,11 @@ describe('Flags', function () {
 
 			it('shouldn\'t return a flag when filtered by cid 2', function (done) {
 				Flags.list({
-					cid: 2,
-				}, 1, function (err, payload) {
+					filters: {
+						cid: 2,
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -228,8 +235,11 @@ describe('Flags', function () {
 
 			it('should return a flag when filtered by both cid 1 and 2', function (done) {
 				Flags.list({
-					cid: [1, 2],
-				}, 1, function (err, payload) {
+					filters: {
+						cid: [1, 2],
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -242,9 +252,12 @@ describe('Flags', function () {
 
 			it('should return one flag if filtered by both cid 1 and 2 and open state', function (done) {
 				Flags.list({
-					cid: [1, 2],
-					state: 'open',
-				}, 1, function (err, payload) {
+					filters: {
+						cid: [1, 2],
+						state: 'open',
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -257,9 +270,12 @@ describe('Flags', function () {
 
 			it('should return no flag if filtered by both cid 1 and 2 and non-open state', function (done) {
 				Flags.list({
-					cid: [1, 2],
-					state: 'resolved',
-				}, 1, function (err, payload) {
+					filters: {
+						cid: [1, 2],
+						state: 'resolved',
+					},
+					uid: 1,
+				}, function (err, payload) {
 					assert.ifError(err);
 					assert.ok(payload.hasOwnProperty('flags'));
 					assert.ok(payload.hasOwnProperty('page'));
@@ -270,13 +286,73 @@ describe('Flags', function () {
 				});
 			});
 		});
+
+		describe('(with sort)', () => {
+			before(async () => {
+				// Create a second flag to test sorting
+				const post = await Topics.reply({
+					tid: 1,
+					uid: uid1,
+					content: 'this is a reply -- flag me',
+				});
+				await Flags.create('post', post.pid, adminUid, 'another flag');
+				await Flags.create('post', 1, uid3, 'additional flag report');
+			});
+
+			it('should return sorted flags latest first if no sort is passed in', async () => {
+				const payload = await Flags.list({
+					uid: adminUid,
+				});
+
+				assert(payload.flags.every((cur, idx) => {
+					if (idx === payload.flags.length - 1) {
+						return true;
+					}
+
+					const next = payload.flags[idx + 1];
+					return parseInt(cur.datetime, 10) > parseInt(next.datetime, 10);
+				}));
+			});
+
+			it('should return sorted flags oldest first if "oldest" sort is passed in', async () => {
+				const payload = await Flags.list({
+					uid: adminUid,
+					sort: 'oldest',
+				});
+
+				assert(payload.flags.every((cur, idx) => {
+					if (idx === payload.flags.length - 1) {
+						return true;
+					}
+
+					const next = payload.flags[idx + 1];
+					return parseInt(cur.datetime, 10) < parseInt(next.datetime, 10);
+				}));
+			});
+
+			it('should return flags with more reports first if "reports" sort is passed in', async () => {
+				const payload = await Flags.list({
+					uid: adminUid,
+					sort: 'reports',
+				});
+
+				assert(payload.flags.every((cur, idx) => {
+					if (idx === payload.flags.length - 1) {
+						return true;
+					}
+
+					const next = payload.flags[idx + 1];
+					return parseInt(cur.heat, 10) >= parseInt(next.heat, 10);
+				}));
+			});
+		});
 	});
 
 	describe('.update()', function () {
 		it('should alter a flag\'s various attributes and persist them to the database', function (done) {
-			Flags.update(1, 1, {
+			Flags.update(1, adminUid, {
 				state: 'wip',
-				assignee: 1,
+				assignee: adminUid,
 			}, function (err) {
 				assert.ifError(err);
 				db.getObjectFields('flag:1', ['state', 'assignee'], function (err, data) {
@@ -286,7 +362,7 @@ describe('Flags', function () {
 
 					assert.strictEqual('wip', data.state);
 					assert.ok(!isNaN(parseInt(data.assignee, 10)));
-					assert.strictEqual(1, parseInt(data.assignee, 10));
+					assert.strictEqual(adminUid, parseInt(data.assignee, 10));
 					done();
 				});
 			});
@@ -300,18 +376,99 @@ describe('Flags', function () {
 
 				history.forEach(function (change) {
 					switch (change.attribute) {
-					case 'state':
-						assert.strictEqual('[[flags:state-wip]]', change.value);
-						break;
+						case 'state':
+							assert.strictEqual('[[flags:state-wip]]', change.value);
+							break;
 
-					case 'assignee':
-						assert.strictEqual(1, change.value);
-						break;
+						case 'assignee':
+							assert.strictEqual(1, change.value);
+							break;
 					}
 				});
 
 				done();
 			});
+		});
+
+		it('should allow assignment if user is an admin and do nothing otherwise', async () => {
+			await Flags.update(1, adminUid, {
+				assignee: adminUid,
+			});
+			let assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(adminUid, parseInt(assignee, 10));
+
+			await Flags.update(1, adminUid, {
+				assignee: uid3,
+			});
+			assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(adminUid, parseInt(assignee, 10));
+		});
+
+		it('should allow assignment if user is a global mod and do nothing otherwise', async () => {
+			await Groups.join('Global Moderators', uid3);
+
+			await Flags.update(1, uid3, {
+				assignee: uid3,
+			});
+			let assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(uid3, parseInt(assignee, 10));
+
+			await Flags.update(1, uid3, {
+				assignee: uid1,
+			});
+			assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(uid3, parseInt(assignee, 10));
+
+			await Groups.leave('Global Moderators', uid3);
+		});
+
+		it('should allow assignment if user is a mod of the category, do nothing otherwise', async () => {
+			await Groups.join('cid:' + category.cid + ':privileges:moderate', uid3);
+
+			await Flags.update(1, uid3, {
+				assignee: uid3,
+			});
+			let assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(uid3, parseInt(assignee, 10));
+
+			await Flags.update(1, uid3, {
+				assignee: uid1,
+			});
+			assignee = await db.getObjectField('flag:1', 'assignee');
+			assert.strictEqual(uid3, parseInt(assignee, 10));
+
+			await Groups.leave('cid:' + category.cid + ':privileges:moderate', uid3);
+		});
+
+		it('should do nothing when you attempt to set a bogus state', async () => {
+			await Flags.update(1, adminUid, {
+				state: 'hocus pocus',
+			});
+
+			const state = await db.getObjectField('flag:1', 'state');
+			assert.strictEqual('wip', state);
+		});
+
+		it('should rescind notification if flag is resolved', async () => {
+			const SocketFlags = require('../src/socket.io/flags.js');
+			const result = await Topics.post({
+				cid: category.cid,
+				uid: uid3,
+				title: 'Topic to flag',
+				content: 'This is flaggable content',
+			});
+			const flagId = await SocketFlags.create({ uid: uid1 }, { type: 'post', id: result.postData.pid, reason: 'spam' });
+			await sleep(2000);
+
+			let userNotifs = await User.notifications.getAll(adminUid);
+			assert(userNotifs.includes('flag:post:' + result.postData.pid));
+
+			await Flags.update(flagId, adminUid, {
+				state: 'resolved',
+			});
+
+			userNotifs = await User.notifications.getAll(adminUid);
+			assert(!userNotifs.includes('flag:post:' + result.postData.pid));
 		});
 	});
 
@@ -527,7 +684,8 @@ describe('Flags', function () {
 						throw err;
 					}
 
-					assert.strictEqual(entries + 1, history.length);
+					// 1 for the new event appended, 2 for username and email change
+					assert.strictEqual(entries + 3, history.length);
 					done();
 				});
 			});
@@ -546,9 +704,7 @@ describe('Flags', function () {
 
 	describe('(websockets)', function () {
 		var SocketFlags = require('../src/socket.io/flags.js');
-		var tid;
 		var pid;
-		var flag;
 
 		before(function (done) {
 			Topics.post({
@@ -557,7 +713,6 @@ describe('Flags', function () {
 				title: 'Another topic',
 				content: 'This is flaggable content',
 			}, function (err, topic) {
-				tid = topic.postData.tid;
 				pid = topic.postData.pid;
 
 				done(err);
@@ -570,8 +725,7 @@ describe('Flags', function () {
 					type: 'post',
 					id: pid,
 					reason: 'foobar',
-				}, function (err, flagObj) {
-					flag = flagObj;
+				}, function (err) {
 					assert.ifError(err);
 
 					Flags.exists('post', pid, 1, function (err, exists) {
@@ -580,6 +734,23 @@ describe('Flags', function () {
 						done();
 					});
 				});
+			});
+
+			it('should not allow flagging post in private category', async function () {
+				const category = await Categories.create({ name: 'private category' });
+
+				await Privileges.categories.rescind(['groups:topics:read'], category.cid, 'registered-users');
+				const result = await Topics.post({
+					cid: category.cid,
+					uid: adminUid,
+					title: 'private topic',
+					content: 'private post',
+				});
+				try {
+					await SocketFlags.create({ uid: uid3 }, { type: 'post', id: result.postData.pid, reason: 'foobar' });
+				} catch (err) {
+					assert.equal(err.message, '[[error:no-privileges]]');
+				}
 			});
 		});
 
