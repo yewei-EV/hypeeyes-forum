@@ -129,6 +129,7 @@
         "winston": "3.3.3",
         "xml": "^1.0.1",
         "xregexp": "^4.3.0",
+        "canvas": "^2.6.1",
         "zxcvbn": "^4.4.2"
     },
     "devDependencies": {
